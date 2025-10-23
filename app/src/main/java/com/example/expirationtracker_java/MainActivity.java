@@ -9,11 +9,20 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.Observer;
 
-import java.util.Arrays;
+import com.example.expirationtracker_java.data.Repository;
+import com.example.expirationtracker_java.data.entity.CategoryEntity;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+
+    private Repository repository;
+    private Spinner spinner;
+    private ArrayAdapter<String> adapter;
+    private List<String> categoryNames = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,34 +30,47 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-        // 🔹 保留原本視窗邊距設定
+        // ✅ 保留原有的 EdgeToEdge insets 設定
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-        // ------------------------------
-        // 👇 從這裡開始是 Spinner 的部分
-        // ------------------------------
+        // ✅ 初始化元件
+        spinner = findViewById(R.id.spinner);
+        repository = new Repository(getApplication());
 
-        // 1️⃣ 找到 Spinner 元件 (要確定 activity_main.xml 裡有 <Spinner android:id="@+id/mySpinner"/> )
-        Spinner spinner = findViewById(R.id.spinner);
-
-        // 2️⃣ 建立靜態資料清單
-        List<String> itemList = Arrays.asList("🍎 蘋果", "🍌 香蕉", "🍇 葡萄", "🍉 西瓜");
-
-        // 3️⃣ 建立 ArrayAdapter 並指定自訂的 layout (spinner_item.xml)
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+        // ✅ 設定 Spinner Adapter（先給空資料，稍後 LiveData 更新）
+        adapter = new ArrayAdapter<>(
                 this,
-                R.layout.spinner_item,  // 自訂每個項目的顯示樣式
-                itemList
+                R.layout.spinner_item,
+                categoryNames
         );
-
-        // 4️⃣ 設定下拉選單展開時的樣式（可以改成 R.layout.spinner_item 也行）
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-        // 5️⃣ 將 adapter 套用到 spinner
         spinner.setAdapter(adapter);
+
+        // ✅ 觀察資料庫變化（LiveData）
+        repository.getAllCategories().observe(this, new Observer<List<CategoryEntity>>() {
+            @Override
+            public void onChanged(List<CategoryEntity> categoryEntities) {
+                // 每當資料庫資料改變時，這裡會被自動呼叫
+                categoryNames.clear();
+                for (CategoryEntity category : categoryEntities) {
+                    categoryNames.add(category.getName()); // 假設你的 Entity 有 getName()
+                }
+                adapter.notifyDataSetChanged();
+            }
+        });
+
+        // ✅ 若資料庫是空的，插入一些測試資料
+        repository.getAllCategories().observe(this, categories -> {
+            if (categories == null || categories.isEmpty()) {
+                repository.insertCategory(new CategoryEntity("All"));
+                repository.insertCategory(new CategoryEntity("Passport"));
+                repository.insertCategory(new CategoryEntity("🥤 飲料"));
+                repository.insertCategory(new CategoryEntity("🍫 點心"));
+            }
+        });
     }
 }
