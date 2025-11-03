@@ -10,13 +10,11 @@ public class CategoryEntity {
 
     public String cname;
     // icon 放 drawable id
-    public int iconId;
     public boolean createdViaUser;
 
     // ✅ 加上這個建構子：建立資料時能直接指定名稱
     public CategoryEntity(String cname) {
         this.cname = cname;
-        this.iconId = 0;          // 預設沒圖示
         this.createdViaUser = false; // 預設不是使用者新增
     }
 

@@ -12,6 +12,5 @@ public class RecordEntity {
     public String note;
     //    room 不能存時間戳記
     public String expiredDate;
-    public String createdAt;
-    public String updatedAt;
+    public String imagePath;
 }
