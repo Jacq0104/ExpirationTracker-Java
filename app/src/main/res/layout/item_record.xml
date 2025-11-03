@@ -1,8 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/tvTitle"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:padding="12dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="12dp"
-    android:textSize="16sp"
-    android:textColor="@android:color/black" />
+    android:background="?android:attr/selectableItemBackground">
+
+    <!-- 左邊放圖片 -->
+    <ImageView
+        android:id="@+id/imgRecord"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:scaleType="centerCrop"
+        android:layout_marginEnd="12dp"
+        android:src="@drawable/ic_launcher_foreground" />
+
+    <!-- 右邊放文字欄位 -->
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1">
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Title"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"/>
+
+        <TextView
+            android:id="@+id/tvNote"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Note content"
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray"/>
+
+        <TextView
+            android:id="@+id/tvExpired"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Expire: 2025-12-31"
+            android:textSize="13sp"
+            android:textColor="@android:color/holo_red_dark"/>
+    </LinearLayout>
+
+</LinearLayout>

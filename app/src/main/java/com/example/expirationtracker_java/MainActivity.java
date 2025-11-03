@@ -120,10 +120,12 @@ public class MainActivity extends AppCompatActivity {
         // ===== (可選) 初始化塞兩筆測試 Record 看畫面 =====
         repository.getAllRecord().observe(this, rs -> {
             if (rs == null || rs.isEmpty()) {
-                RecordEntity a = new RecordEntity();
-                a.title = "My passport";
-                a.cid = tryFindCidByName("Passport");
-                repository.insertRecord(a);
+                RecordEntity r1 = new RecordEntity();
+                r1.title = "Passport";
+                r1.note = "Renew before summer";
+                r1.expiredDate = "2026-05-01";
+                r1.imagePath = "/storage/emulated/0/Download/passport.jpg";
+                repository.insertRecord(r1);
 
                 RecordEntity b = new RecordEntity();
                 b.title = "Coupon - Starbucks";
