@@ -1,8 +1,10 @@
 package com.example.expirationtracker_java;
 
+import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -10,15 +12,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.expirationtracker_java.data.entity.RecordEntity;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordViewHolder> {
 
-    // 這裡放要顯示的資料
     private List<RecordEntity> records = new ArrayList<>();
 
-    // 之後 LiveData 有新資料會呼叫這個
     public void setRecords(List<RecordEntity> newRecords) {
         this.records = newRecords;
         notifyDataSetChanged();
@@ -35,7 +36,23 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
     @Override
     public void onBindViewHolder(@NonNull RecordViewHolder holder, int position) {
         RecordEntity record = records.get(position);
-        holder.tvTitle.setText(record.title);   // ← 這裡就綁 title
+
+        // 綁定文字
+        holder.tvTitle.setText(record.title != null ? record.title : "(無標題)");
+        holder.tvNote.setText(record.note != null ? record.note : "");
+        holder.tvExpired.setText(record.expiredDate != null ? record.expiredDate : "");
+
+        // 綁定圖片
+        if (record.imagePath != null && !record.imagePath.isEmpty()) {
+            File imgFile = new File(record.imagePath);
+            if (imgFile.exists()) {
+                holder.imgRecord.setImageBitmap(BitmapFactory.decodeFile(imgFile.getAbsolutePath()));
+            } else {
+                holder.imgRecord.setImageResource(R.drawable.ic_launcher_foreground); // 預設圖
+            }
+        } else {
+            holder.imgRecord.setImageResource(R.drawable.ic_launcher_foreground);
+        }
     }
 
     @Override
@@ -44,11 +61,15 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
     }
 
     static class RecordViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle;
+        TextView tvTitle, tvNote, tvExpired;
+        ImageView imgRecord;
 
         public RecordViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tvTitle);
+            tvNote = itemView.findViewById(R.id.tvNote);
+            tvExpired = itemView.findViewById(R.id.tvExpired);
+            imgRecord = itemView.findViewById(R.id.imgRecord);
         }
     }
 }
