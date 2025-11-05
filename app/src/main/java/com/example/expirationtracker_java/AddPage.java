@@ -10,6 +10,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.Calendar;
+import com.google.android.material.appbar.MaterialToolbar;
+
 
 public class AddPage extends AppCompatActivity {
 
@@ -19,6 +21,7 @@ public class AddPage extends AppCompatActivity {
     FloatingActionButton btnTakePhoto;
     ImageView imagePreview;
     FloatingActionButton fabSave;
+    MaterialToolbar toolbar;
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
     Uri photoUri;
@@ -36,6 +39,15 @@ public class AddPage extends AppCompatActivity {
         btnTakePhoto = findViewById(R.id.btnTakePhoto);
         imagePreview = findViewById(R.id.imagePreview);
         fabSave = findViewById(R.id.fabSave);
+        toolbar = findViewById(R.id.toolbar);
+
+        // Toolbar 返回箭頭功能
+        toolbar.setNavigationOnClickListener(v -> {
+            // 回主畫面
+            Intent intent = new Intent(AddPage.this, MainActivity.class);
+            startActivity(intent);
+            finish(); // 關閉目前的 AddPage
+        });
 
         // data selector
         editDate.setOnClickListener(v -> {
@@ -79,7 +91,10 @@ public class AddPage extends AppCompatActivity {
                     "Saved: " + title + " (" + category + ")",
                     Toast.LENGTH_SHORT).show();
 
-            finish(); // back to main page
+            // 回主畫面
+            Intent intent = new Intent(AddPage.this, MainActivity.class);
+            startActivity(intent);
+            finish();
         });
     }
 
