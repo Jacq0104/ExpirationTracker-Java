@@ -121,4 +121,16 @@
         app:layout_constraintHorizontal_bias="0.519"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <!-- bottom right fab to reach the "add item" page-->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAdd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="24dp"
+        android:contentDescription="Add"
+        app:srcCompat="@drawable/ic_add"
+        app:tint="@android:color/black"
+        app:backgroundTint="#E0E0E0" />
+
 </LinearLayout>

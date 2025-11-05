@@ -1,8 +1,10 @@
 package com.example.expirationtracker_java;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.AdapterView;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.expirationtracker_java.data.Repository;
 import com.example.expirationtracker_java.data.entity.CategoryEntity;
 import com.example.expirationtracker_java.data.entity.RecordEntity;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +39,9 @@ public class MainActivity extends AppCompatActivity {
     private final List<RecordEntity> allRecords = new ArrayList<>(); // 觀察到的全量
     private final List<RecordEntity> shownRecords = new ArrayList<>(); // 目前顯示的
 
+    //add button
+    FloatingActionButton fabAdd;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
         // ===== 1) init views =====
         spinner = findViewById(R.id.spinner);
         rvRecords = findViewById(R.id.rvRecords);
+        fabAdd = findViewById(R.id.fabAdd);
 
         // ===== 2) init repo =====
         repository = new Repository(getApplication());
@@ -132,6 +139,15 @@ public class MainActivity extends AppCompatActivity {
                 b.cid = tryFindCidByName("Coupons");
                 repository.insertRecord(b);
             }
+        });
+
+
+        fabAdd.setOnClickListener(v -> {
+
+            // click add button to reach the add item page
+            Intent intent = new Intent(MainActivity.this, AddPage.class);
+            startActivity(intent);
+
         });
     }
 
