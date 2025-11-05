@@ -11,6 +11,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ExpirationTrackerJava">
+
         <activity
             android:name=".AddPage"
             android:exported="true">
@@ -22,7 +23,7 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true" />
+            android:exported="false" />
 
     </application>
 

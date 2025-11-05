@@ -13,10 +13,10 @@ import java.util.Calendar;
 
 public class AddPage extends AppCompatActivity {
 
-    // 宣告介面元件
+    // declare the interface elements
     EditText editTitle, editDate, editNote;
     Spinner spinnerCategory;
-    Button btnTakePhoto;
+    FloatingActionButton btnTakePhoto;
     ImageView imagePreview;
     FloatingActionButton fabSave;
 
@@ -26,7 +26,7 @@ public class AddPage extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_add_page); // 載入你剛剛的畫面
+        setContentView(R.layout.activity_add_page); // loading xml
 
         // 綁定 XML 中的元件
         editTitle = findViewById(R.id.editTitle);
@@ -37,7 +37,7 @@ public class AddPage extends AppCompatActivity {
         imagePreview = findViewById(R.id.imagePreview);
         fabSave = findViewById(R.id.fabSave);
 
-        // 日期選擇器
+        // data selector
         editDate.setOnClickListener(v -> {
             final Calendar c = Calendar.getInstance();
             int year = c.get(Calendar.YEAR);
@@ -67,19 +67,19 @@ public class AddPage extends AppCompatActivity {
             }
         });
 
-        // 儲存按鈕（右下角勾勾）
+        // bottom right save fab
         fabSave.setOnClickListener(v -> {
             String title = editTitle.getText().toString();
             String date = editDate.getText().toString();
             String category = spinnerCategory.getSelectedItem().toString();
             String note = editNote.getText().toString();
 
-            // 簡單顯示資料
+            // show simple words after clicking the save fab
             Toast.makeText(this,
                     "Saved: " + title + " (" + category + ")",
                     Toast.LENGTH_SHORT).show();
 
-            finish(); // 返回上一頁
+            finish(); // back to main page
         });
     }
 
