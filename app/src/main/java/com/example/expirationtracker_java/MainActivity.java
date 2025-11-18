@@ -116,8 +116,8 @@ public class MainActivity extends AppCompatActivity {
         // ===== 5) 觀察 Record 全量 → 存到 allRecords，然後依目前選取的 cid 過濾顯示 =====
         repository.getAllRecord().observe(this, records -> {
             allRecords.clear();
-            if (records != null) allRecords.addAll(records);
-            applyFilterAndShow(); // 根據 selectedCid 過濾並顯示
+            if (records != null) allRecords.addAll(records);//資料庫的讀進來
+            applyFilterAndShow(); // 呼叫function 根據 selectedCid 過濾並顯示
         });
 
         // ===== 6) Spinner 選取事件：更新 selectedCid，然後重算顯示 =====
@@ -128,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
                 if ("All".equalsIgnoreCase(selected.cname)) {
                     selectedCid = null;
                 } else {
-                    selectedCid = selected.cid;
+                    selectedCid = selected.cid;   // 直接用就好，不用再去 repository 查一次
                 }
                 applyFilterAndShow();
             }
@@ -148,10 +148,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // ===== (可選) 初始化塞兩筆測試 Record 看畫面 =====
+        // ===== (可選) 初始化塞兩筆測試 Record 看畫面 =====DELETE FROM record;
         repository.getAllRecord().observe(this, rs -> {
             if (rs == null || rs.isEmpty()) {
                 RecordEntity r1 = new RecordEntity();
+                r1.cid = tryFindCidByName("Passport");
                 r1.title = "Passport";
                 r1.note = "Renew before summer";
                 r1.expiredDate = "2026-05-01";
@@ -159,8 +160,9 @@ public class MainActivity extends AppCompatActivity {
                 repository.insertRecord(r1);
 
                 RecordEntity b = new RecordEntity();
-                b.title = "Coupon - Starbucks";
+                b.title = "Coupon - Billa";
                 b.cid = tryFindCidByName("Coupons");
+                b.expiredDate = "2026-02-03";
                 repository.insertRecord(b);
             }
         });
