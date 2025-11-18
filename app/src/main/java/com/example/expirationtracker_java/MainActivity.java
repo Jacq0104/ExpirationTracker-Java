@@ -2,7 +2,10 @@ package com.example.expirationtracker_java;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.AdapterView;
+import android.widget.SearchView;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -41,6 +44,12 @@ public class MainActivity extends AppCompatActivity {
 
     //add button
     FloatingActionButton fabAdd;
+    // SearchView
+    private SearchView searchView;
+
+    private View rootView;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +68,8 @@ public class MainActivity extends AppCompatActivity {
         spinner = findViewById(R.id.spinner);
         rvRecords = findViewById(R.id.rvRecords);
         fabAdd = findViewById(R.id.fabAdd);
+        searchView = findViewById(R.id.searchView);
+        rootView = findViewById(R.id.main);
 
         // ===== 2) init repo =====
         repository = new Repository(getApplication());
@@ -122,6 +133,19 @@ public class MainActivity extends AppCompatActivity {
                 applyFilterAndShow();
             }
             @Override public void onNothingSelected(AdapterView<?> parent) { /* no-op */ }
+        });
+
+        // 設定 searchView 可以點選整行啟動
+        // 參考 6 寫篩選器
+        searchView.setOnClickListener(v -> {
+            searchView.setIconified(false);
+        });
+
+        // 解決 searchView 持續被選取狀態
+        rootView.setOnClickListener(v -> {
+            if (!searchView.isIconified()) {
+                searchView.setIconified(true);
+            }
         });
 
         // ===== (可選) 初始化塞兩筆測試 Record 看畫面 =====
