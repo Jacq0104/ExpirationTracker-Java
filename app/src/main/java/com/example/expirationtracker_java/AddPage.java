@@ -8,6 +8,10 @@ import android.provider.MediaStore;
 import android.widget.*;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.expirationtracker_java.data.Repository;
+import com.example.expirationtracker_java.data.entity.CategoryEntity;
+import com.example.expirationtracker_java.data.entity.RecordEntity;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.Calendar;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -22,6 +26,12 @@ public class AddPage extends AppCompatActivity {
     ImageView imagePreview;
     FloatingActionButton fabSave;
     MaterialToolbar toolbar;
+
+    //添加"從資料庫讀"的功能
+    private Repository repository;
+    private CategorySpinnerAdapter categorySpinnerAdapter;
+    private final java.util.List<com.example.expirationtracker_java.data.entity.CategoryEntity> categoryList =
+            new java.util.ArrayList<>();
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
     Uri photoUri;
@@ -40,6 +50,22 @@ public class AddPage extends AppCompatActivity {
         imagePreview = findViewById(R.id.imagePreview);
         fabSave = findViewById(R.id.fabSave);
         toolbar = findViewById(R.id.toolbar);
+
+        // 建 Repository
+        repository = new Repository(getApplication());
+
+        // 建 Spinner 的 adapter（用你們自己寫的 CategorySpinnerAdapter）
+        categorySpinnerAdapter = new CategorySpinnerAdapter(this, categoryList);
+        spinnerCategory.setAdapter(categorySpinnerAdapter);
+
+        // 從資料庫讀 category，更新 Spinner
+        repository.getAllCategories().observe(this, categories -> {
+            categoryList.clear();
+            if (categories != null) {
+                categoryList.addAll(categories);
+            }
+            categorySpinnerAdapter.notifyDataSetChanged();
+        });
 
         // Toolbar 返回箭頭功能
         toolbar.setNavigationOnClickListener(v -> {
@@ -64,12 +90,12 @@ public class AddPage extends AppCompatActivity {
             dialog.show();
         });
 
-        // Spinner 選項
-        String[] categories = {"Document", "Warranty", "Coupon"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_item, categories);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerCategory.setAdapter(adapter);
+        // Spinner 寫死category(測試用)
+//        String[] categories = {"Document", "Warranty", "Coupon"};
+//        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+//                android.R.layout.simple_spinner_item, categories);
+//        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//        spinnerCategory.setAdapter(adapter);
 
         // 拍照按鈕
         btnTakePhoto.setOnClickListener(v -> {
@@ -83,13 +109,27 @@ public class AddPage extends AppCompatActivity {
         fabSave.setOnClickListener(v -> {
             String title = editTitle.getText().toString();
             String date = editDate.getText().toString();
-            String category = spinnerCategory.getSelectedItem().toString();
             String note = editNote.getText().toString();
 
-            // show simple words after clicking the save fab
+            //String category = spinnerCategory.getSelectedItem().toString();
+            CategoryEntity selected = (CategoryEntity) spinnerCategory.getSelectedItem();
+            int cid = selected.cid;           // 要存到 Record 的外鍵
+            String categoryName = selected.cname; // 要顯示在 Toast 才用到
+
+            // UI: show simple words after clicking the save fab
             Toast.makeText(this,
-                    "Saved: " + title + " (" + category + ")",
+                    "Saved: " + title + " (" + categoryName + ")",
                     Toast.LENGTH_SHORT).show();
+
+            // 寫進資料庫!!!
+            RecordEntity r = new RecordEntity();
+            r.title = title;
+            r.expiredDate = date;
+            r.note = note;
+            r.cid = cid;            // ← 重點是這行！
+            // 如果有照片：r.imagePath = ...
+
+            repository.insertRecord(r);
 
             // 回主畫面
             Intent intent = new Intent(AddPage.this, MainActivity.class);
