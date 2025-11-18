@@ -92,13 +92,16 @@ public class AddPage extends AppCompatActivity {
         // 從資料庫讀 category，更新 Spinner
         repository.getAllCategories().observe(this, categories -> {
             categoryList.clear();
-            if (categories != null) {
-                categoryList.addAll(categories);
+            for (CategoryEntity c : categories) {
+                // 預設不要顯示all
+                if (!"All".equalsIgnoreCase(c.cname)) {
+                    categoryList.add(c);
+                }
             }
 
-            // 在最後加一個「Add new category」的假項目
+            // 在最後加「Add new category」
             CategoryEntity addItem = new CategoryEntity("＋ Add new category");
-            addItem.cid = -1;              // 用 -1 當作「這是假的，不能拿來存 record」
+            addItem.cid = -1;              // 用不合理的cid來避免存到 record」
             categoryList.add(addItem);
 
             categorySpinnerAdapter.notifyDataSetChanged();
@@ -178,9 +181,26 @@ public class AddPage extends AppCompatActivity {
             String date = editDate.getText().toString();
             String note = editNote.getText().toString();
 
+            // 防呆: 檢查 title
+            if (title.isEmpty()) {
+                editTitle.setError("Title is required");
+                editTitle.requestFocus();
+                Toast.makeText(this, "請先輸入 Title", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // 防呆: 檢查 date
+            if (date.isEmpty()) {
+                editDate.setError("Expiration Date is required");
+                editDate.requestFocus();
+                Toast.makeText(this, "請先選擇 Expiration Date", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             //String category = spinnerCategory.getSelectedItem().toString();
             CategoryEntity selected = (CategoryEntity) spinnerCategory.getSelectedItem();
-            //怕使用者在添加新的category選add new category就直接按save(這樣cid=-1會存進去database)
+            //防呆:檢查category
+            // 怕使用者在添加新的category選add new category就直接按save(這樣cid=-1會存進去database)
             if (selected == null || selected.cid == -1) {
                 Toast.makeText(this, "請先選擇一個分類", Toast.LENGTH_SHORT).show();
                 return;
