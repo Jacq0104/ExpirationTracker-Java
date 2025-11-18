@@ -34,7 +34,10 @@ public class AddPage extends AppCompatActivity {
             new java.util.ArrayList<>();
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
-    Uri photoUri;
+    static final int REQUEST_IMAGE_PICK = 2;  // 「從相簿選圖片」用的 request code
+    Uri photoUri;                             // 選到的圖的path
+    String imagePath;
+
 
     //添加category新增方式
     private void showAddCategoryDialog() {
@@ -153,11 +156,20 @@ public class AddPage extends AppCompatActivity {
 //        spinnerCategory.setAdapter(adapter);
 
         // 拍照按鈕
+//        btnTakePhoto.setOnClickListener(v -> {
+//            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//            if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+//                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+//            }
+//        });
+
+        // 從相簿選擇圖片
         btnTakePhoto.setOnClickListener(v -> {
-            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
-            }
+            Intent pickIntent = new Intent(
+                    Intent.ACTION_PICK,
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            );
+            startActivityForResult(pickIntent, REQUEST_IMAGE_PICK);
         });
 
         // bottom right save fab
@@ -187,8 +199,10 @@ public class AddPage extends AppCompatActivity {
             r.title = title;
             r.expiredDate = date;
             r.note = note;
-            r.cid = cid;            // ← 重點是這行！
-            // 如果有照片：r.imagePath = ...
+            r.cid = cid;
+            if (imagePath != null && !imagePath.isEmpty()) {
+                r.imagePath = imagePath;
+            }
 
             repository.insertRecord(r);
 
@@ -203,11 +217,13 @@ public class AddPage extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            Bundle extras = data.getExtras();
-            if (extras != null) {
-                // 預覽拍到的縮圖
-                imagePreview.setImageBitmap((android.graphics.Bitmap) extras.get("data"));
+
+        if (requestCode == REQUEST_IMAGE_PICK && resultCode == RESULT_OK && data != null) {
+            // 使用者從相簿挑選一張圖片
+            photoUri = data.getData();          // photo path
+            if (photoUri != null) {
+                imagePreview.setImageURI(photoUri);   // 圓圈裡顯示圖片
+                imagePath = photoUri.toString();      // Uri 字串存進 DB
             }
         }
     }
