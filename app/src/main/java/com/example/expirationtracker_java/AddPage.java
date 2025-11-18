@@ -36,6 +36,34 @@ public class AddPage extends AppCompatActivity {
     static final int REQUEST_IMAGE_CAPTURE = 1;
     Uri photoUri;
 
+    //添加category新增方式
+    private void showAddCategoryDialog() {
+        EditText input = new EditText(this);
+        input.setHint("Category name");
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Add Category")
+                .setView(input)
+                .setPositiveButton("Add", (dialog, which) -> {
+                    String name = input.getText().toString().trim();
+                    if (name.isEmpty()) {
+                        Toast.makeText(this, "Category name cannot be empty", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    // 建一個新的 CategoryEntity，標記為使用者自己建立
+                    CategoryEntity newCategory = new CategoryEntity(name);
+                    newCategory.createdViaUser = true;
+
+                    // 寫進資料庫，Room 會自動幫你 assign 新的 cid
+                    repository.insertCategory(newCategory);
+                    // insert 後 LiveData 會觸發 observer，上面的 Spinner 就會自動刷新
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,8 +92,35 @@ public class AddPage extends AppCompatActivity {
             if (categories != null) {
                 categoryList.addAll(categories);
             }
+
+            // 在最後加一個「Add new category」的假項目
+            CategoryEntity addItem = new CategoryEntity("＋ Add new category");
+            addItem.cid = -1;              // 用 -1 當作「這是假的，不能拿來存 record」
+            categoryList.add(addItem);
+
             categorySpinnerAdapter.notifyDataSetChanged();
         });
+
+        spinnerCategory.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, android.view.View view, int position, long id) {
+                // 如果選到的是最後一個項目（＋ Add new category）
+                if (position == categoryList.size() - 1) {
+                    // 先改回第一個選項（不要停在Add new category）
+                    if (categoryList.size() > 1) {
+                        spinnerCategory.setSelection(0); // 或者上一個選項 setSelection(categoryList.size() - 2);
+                    }
+
+                    showAddCategoryDialog();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+
+
 
         // Toolbar 返回箭頭功能
         toolbar.setNavigationOnClickListener(v -> {
@@ -113,6 +168,12 @@ public class AddPage extends AppCompatActivity {
 
             //String category = spinnerCategory.getSelectedItem().toString();
             CategoryEntity selected = (CategoryEntity) spinnerCategory.getSelectedItem();
+            //怕使用者在添加新的category選add new category就直接按save(這樣cid=-1會存進去database)
+            if (selected == null || selected.cid == -1) {
+                Toast.makeText(this, "請先選擇一個分類", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             int cid = selected.cid;           // 要存到 Record 的外鍵
             String categoryName = selected.cname; // 要顯示在 Toast 才用到
 
