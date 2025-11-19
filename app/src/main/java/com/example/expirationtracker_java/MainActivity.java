@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.Spinner;
 import android.widget.Toast;
@@ -23,6 +25,8 @@ import com.example.expirationtracker_java.data.entity.RecordEntity;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -41,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private RecordAdapter recordAdapter;
     private final List<RecordEntity> allRecords = new ArrayList<>(); // 觀察到的全量
     private final List<RecordEntity> shownRecords = new ArrayList<>(); // 目前顯示的
+    private Button deleteBtn;
 
     //add button
     FloatingActionButton fabAdd;
@@ -49,6 +54,17 @@ public class MainActivity extends AppCompatActivity {
 
     private View rootView;
 
+    enum FilterType {
+        NONE,
+        EXPIRED,
+        SOON,
+        SAFE
+    }
+    private FilterType currectFilter = FilterType.NONE;
+
+    private LinearLayout expiredBtn;
+    private LinearLayout soonBtn;
+    private LinearLayout safeBtn;
 
 
     @Override
@@ -70,6 +86,9 @@ public class MainActivity extends AppCompatActivity {
         fabAdd = findViewById(R.id.fabAdd);
         searchView = findViewById(R.id.searchView);
         rootView = findViewById(R.id.main);
+        expiredBtn = findViewById(R.id.expried_btn);
+        soonBtn = findViewById(R.id.soon_btn);
+        safeBtn = findViewById(R.id.safe_btn);
 
         // ===== 2) init repo =====
         repository = new Repository(getApplication());
@@ -148,6 +167,38 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // 設定到期日篩選器
+        expiredBtn.setOnClickListener(v -> {
+            if (currectFilter == FilterType.EXPIRED) {
+                currectFilter = FilterType.NONE;
+
+            } else {
+                currectFilter = FilterType.EXPIRED;
+            }
+            updateFilterUI();
+            filterData();
+        });
+
+        soonBtn.setOnClickListener(v -> {
+            if (currectFilter == FilterType.SOON) {
+                currectFilter = FilterType.NONE;
+            } else {
+                currectFilter = FilterType.SOON;
+            }
+            updateFilterUI();
+            filterData();
+        });
+
+        safeBtn.setOnClickListener(v -> {
+            if (currectFilter == FilterType.SAFE) {
+                currectFilter = FilterType.NONE;
+            } else {
+                currectFilter = FilterType.SAFE;
+            }
+            updateFilterUI();
+            filterData();
+        });
+
         // ===== (可選) 初始化塞兩筆測試 Record 看畫面 =====DELETE FROM record;
         repository.getAllRecord().observe(this, rs -> {
             if (rs == null || rs.isEmpty()) {
@@ -197,4 +248,69 @@ public class MainActivity extends AppCompatActivity {
         }
         return 0;
     }
+
+    private void updateFilterUI() {
+        if (currectFilter == FilterType.EXPIRED) {
+            expiredBtn.setBackgroundResource(R.drawable.buttonstyle_selected);
+        } else {
+            expiredBtn.setBackgroundResource(R.drawable.buttonstyle);
+        }
+
+        if (currectFilter == FilterType.SOON) {
+            soonBtn.setBackgroundResource(R.drawable.buttonstyle_selected);
+        } else {
+            soonBtn.setBackgroundResource(R.drawable.buttonstyle);
+        }
+
+        if (currectFilter == FilterType.SAFE) {
+            safeBtn.setBackgroundResource(R.drawable.buttonstyle_selected);
+        } else {
+            safeBtn.setBackgroundResource(R.drawable.buttonstyle);
+        }
+    }
+
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private void filterData() {
+        shownRecords.clear();
+
+        LocalDate today = LocalDate.now();
+        long soonDays = 14;
+
+        for (RecordEntity r : allRecords) {
+
+            // 1. 分類器過濾
+            if (selectedCid != null && r.cid != selectedCid) {
+                continue;
+            }
+
+            // 2. 日期過濾
+            LocalDate expiry = LocalDate.parse(r.expiredDate, formatter);
+            long daysDiff = java.time.temporal.ChronoUnit.DAYS.between(today, expiry);
+
+            boolean pass = false;
+
+            switch (currectFilter) {
+                case NONE:
+                    pass = true;
+                    break;
+
+                case EXPIRED:
+                    if (daysDiff < 0) pass = true;
+                    break;
+
+                case SOON:
+                    if (daysDiff >= 0 && daysDiff <= soonDays) pass = true;
+                    break;
+
+                case SAFE:
+                    if (daysDiff > soonDays) pass = true;
+                    break;
+            }
+
+            if (pass) shownRecords.add(r);
+        }
+
+        recordAdapter.setRecords(shownRecords);
+    }
+
 }

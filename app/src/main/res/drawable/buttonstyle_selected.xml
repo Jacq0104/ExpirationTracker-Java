@@ -2,15 +2,14 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
 
-    <!-- 邊框 -->
     <stroke
         android:width="1dp"
         android:color="@color/black" />
 
-    <!-- 圓角 -->
+    <solid android:color="#FFD966" /> <!-- 選取狀態底色，可調整 -->
+
     <corners android:radius="10dp" />
 
-    <!-- 內距 -->
 <!--    <padding-->
 <!--        android:left="8dp"-->
 <!--        android:top="4dp"-->
