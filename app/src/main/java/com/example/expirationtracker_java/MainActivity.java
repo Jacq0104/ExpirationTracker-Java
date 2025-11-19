@@ -226,6 +226,11 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
 
         });
+
+        // 刪除item
+        recordAdapter.setOnDeleteClickListener(record -> {
+            repository.deleteRecord(record);
+        });
     }
 
     /** 依 selectedCid 過濾 allRecords，丟給 RecyclerView */

@@ -4,6 +4,7 @@ import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -20,6 +21,15 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
 
     private List<RecordEntity> records = new ArrayList<>();
 
+    public interface onDeleteClickListener {
+        void onDeleteClick(RecordEntity record);
+    }
+
+    private onDeleteClickListener deleteListener;
+
+    public void setOnDeleteClickListener(onDeleteClickListener listener) {
+        this.deleteListener = listener;
+    }
     public void setRecords(List<RecordEntity> newRecords) {
         this.records = newRecords;
         notifyDataSetChanged();
@@ -53,6 +63,12 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
         } else {
             holder.imgRecord.setImageResource(R.drawable.ic_launcher_foreground);
         }
+
+        holder.deleteBtn.setOnClickListener(v -> {
+            if (deleteListener != null) {
+                deleteListener.onDeleteClick(record);
+            }
+        });
     }
 
     @Override
@@ -63,6 +79,7 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
     static class RecordViewHolder extends RecyclerView.ViewHolder {
         TextView tvTitle, tvNote, tvExpired;
         ImageView imgRecord;
+        ImageButton deleteBtn;
 
         public RecordViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -70,6 +87,7 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
             tvNote = itemView.findViewById(R.id.tvNote);
             tvExpired = itemView.findViewById(R.id.tvExpired);
             imgRecord = itemView.findViewById(R.id.imgRecord);
+            deleteBtn = itemView.findViewById(R.id.deleteBtn);
         }
     }
 }
