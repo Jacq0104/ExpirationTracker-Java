@@ -72,7 +72,7 @@ public class AddPage extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_page); // loading xml
 
-        // 綁定 XML 中的元件
+        // 綁定 XML中的元件
         editTitle = findViewById(R.id.editTitle);
         editDate = findViewById(R.id.editDate);
         editNote = findViewById(R.id.editNote);
