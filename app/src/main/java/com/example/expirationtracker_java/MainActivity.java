@@ -155,7 +155,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // 設定 searchView 可以點選整行啟動
-        // 參考 6 寫篩選器
         searchView.setOnClickListener(v -> {
             searchView.setIconified(false);
         });
@@ -164,6 +163,20 @@ public class MainActivity extends AppCompatActivity {
         rootView.setOnClickListener(v -> {
             if (!searchView.isIconified()) {
                 searchView.setIconified(true);
+            }
+        });
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                filterByTitle(newText);
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                filterByTitle(query);
+                return true;
             }
         });
 
@@ -241,6 +254,25 @@ public class MainActivity extends AppCompatActivity {
         } else {
             for (RecordEntity r : allRecords) {
                 if (r.cid == selectedCid) shownRecords.add(r);
+            }
+        }
+        recordAdapter.setRecords(shownRecords);
+    }
+
+    // 篩選功能
+    private void filterByTitle(String keyword) {
+        shownRecords.clear();
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            applyFilterAndShow();
+            return;
+        }
+
+        String lower = keyword.toLowerCase().trim();
+
+        for (RecordEntity r : allRecords) {
+            if (r.title != null && r.title.toLowerCase().contains(lower)) {
+                shownRecords.add(r);
             }
         }
         recordAdapter.setRecords(shownRecords);

@@ -35,6 +35,9 @@ public class Repository {
     public void deleteRecord(RecordEntity record) {
         executor.execute(() -> recordDao.deleteRecord(record));
     }
+    public LiveData<List<RecordEntity>> searchRecords(String keyword) {
+        return recordDao.searchRecords(keyword);
+    }
 
     // Category
     public LiveData<List<CategoryEntity>> getAllCategories() {
