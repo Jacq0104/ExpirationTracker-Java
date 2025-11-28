@@ -34,7 +34,10 @@ public class AddPage extends AppCompatActivity {
             new java.util.ArrayList<>();
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
-    Uri photoUri;
+    static final int REQUEST_IMAGE_PICK = 2;  // 「從相簿選圖片」用的 request code
+    Uri photoUri;                             // 選到的圖的path
+    String imagePath;
+
 
     //添加category新增方式
     private void showAddCategoryDialog() {
@@ -69,7 +72,7 @@ public class AddPage extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_page); // loading xml
 
-        // 綁定 XML 中的元件
+        // 綁定 XML中的元件
         editTitle = findViewById(R.id.editTitle);
         editDate = findViewById(R.id.editDate);
         editNote = findViewById(R.id.editNote);
@@ -89,13 +92,16 @@ public class AddPage extends AppCompatActivity {
         // 從資料庫讀 category，更新 Spinner
         repository.getAllCategories().observe(this, categories -> {
             categoryList.clear();
-            if (categories != null) {
-                categoryList.addAll(categories);
+            for (CategoryEntity c : categories) {
+                // 預設不要顯示all
+                if (!"All".equalsIgnoreCase(c.cname)) {
+                    categoryList.add(c);
+                }
             }
 
-            // 在最後加一個「Add new category」的假項目
+            // 在最後加「Add new category」
             CategoryEntity addItem = new CategoryEntity("＋ Add new category");
-            addItem.cid = -1;              // 用 -1 當作「這是假的，不能拿來存 record」
+            addItem.cid = -1;              // 用不合理的cid來避免存到 record」
             categoryList.add(addItem);
 
             categorySpinnerAdapter.notifyDataSetChanged();
@@ -153,11 +159,20 @@ public class AddPage extends AppCompatActivity {
 //        spinnerCategory.setAdapter(adapter);
 
         // 拍照按鈕
+//        btnTakePhoto.setOnClickListener(v -> {
+//            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//            if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+//                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+//            }
+//        });
+
+        // 從相簿選擇圖片
         btnTakePhoto.setOnClickListener(v -> {
-            Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
-            }
+            Intent pickIntent = new Intent(
+                    Intent.ACTION_PICK,
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            );
+            startActivityForResult(pickIntent, REQUEST_IMAGE_PICK);
         });
 
         // bottom right save fab
@@ -166,9 +181,26 @@ public class AddPage extends AppCompatActivity {
             String date = editDate.getText().toString();
             String note = editNote.getText().toString();
 
+            // 防呆: 檢查 title
+            if (title.isEmpty()) {
+                editTitle.setError("Title is required");
+                editTitle.requestFocus();
+                Toast.makeText(this, "請先輸入 Title", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // 防呆: 檢查 date
+            if (date.isEmpty()) {
+                editDate.setError("Expiration Date is required");
+                editDate.requestFocus();
+                Toast.makeText(this, "請先選擇 Expiration Date", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             //String category = spinnerCategory.getSelectedItem().toString();
             CategoryEntity selected = (CategoryEntity) spinnerCategory.getSelectedItem();
-            //怕使用者在添加新的category選add new category就直接按save(這樣cid=-1會存進去database)
+            //防呆:檢查category
+            // 怕使用者在添加新的category選add new category就直接按save(這樣cid=-1會存進去database)
             if (selected == null || selected.cid == -1) {
                 Toast.makeText(this, "請先選擇一個分類", Toast.LENGTH_SHORT).show();
                 return;
@@ -187,8 +219,10 @@ public class AddPage extends AppCompatActivity {
             r.title = title;
             r.expiredDate = date;
             r.note = note;
-            r.cid = cid;            // ← 重點是這行！
-            // 如果有照片：r.imagePath = ...
+            r.cid = cid;
+            if (imagePath != null && !imagePath.isEmpty()) {
+                r.imagePath = imagePath;
+            }
 
             repository.insertRecord(r);
 
@@ -203,11 +237,13 @@ public class AddPage extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            Bundle extras = data.getExtras();
-            if (extras != null) {
-                // 預覽拍到的縮圖
-                imagePreview.setImageBitmap((android.graphics.Bitmap) extras.get("data"));
+
+        if (requestCode == REQUEST_IMAGE_PICK && resultCode == RESULT_OK && data != null) {
+            // 使用者從相簿挑選一張圖片
+            photoUri = data.getData();          // photo path
+            if (photoUri != null) {
+                imagePreview.setImageURI(photoUri);   // 圓圈裡顯示圖片
+                imagePath = photoUri.toString();      // Uri 字串存進 DB
             }
         }
     }
