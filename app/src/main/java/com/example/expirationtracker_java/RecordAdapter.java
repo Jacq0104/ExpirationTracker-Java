@@ -33,7 +33,7 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
     }
     public void setRecords(List<RecordEntity> newRecords) {
         this.records = newRecords;
-        expandedPositions.clear(); //重刷資料時先清空展開狀態
+        expandedPositions.clear();   // 重刷資料時先清空展開狀態
         notifyDataSetChanged();
     }
 
@@ -66,17 +66,17 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
             holder.imgRecord.setImageResource(R.drawable.ic_launcher_foreground);
         }
 
-        // 是否展開
+        // 是否展開note
         boolean isExpanded = expandedPositions.contains(position);
         if (isExpanded) {
             holder.tvNote.setMaxLines(Integer.MAX_VALUE);
             holder.tvNote.setEllipsize(null);
         } else {
-            holder.tvNote.setMaxLines(1);
+            holder.tvNote.setMaxLines(2);
             holder.tvNote.setEllipsize(android.text.TextUtils.TruncateAt.END);
         }
 
-        // 點一下note:展開or收起
+        // 點一下note: 展開or收起
         holder.itemView.setOnClickListener(v -> {
             if (expandedPositions.contains(holder.getAdapterPosition())) {
                 expandedPositions.remove(holder.getAdapterPosition());
@@ -84,6 +84,8 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
                 expandedPositions.add(holder.getAdapterPosition());
             }
             notifyItemChanged(holder.getAdapterPosition());
+        });
+
         holder.deleteBtn.setOnClickListener(v -> {
             if (deleteListener != null) {
                 deleteListener.onDeleteClick(record);
