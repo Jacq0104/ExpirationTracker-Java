@@ -19,9 +19,11 @@ import java.util.List;
 public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordViewHolder> {
 
     private List<RecordEntity> records = new ArrayList<>();
+    private java.util.Set<Integer> expandedPositions = new java.util.HashSet<>();
 
     public void setRecords(List<RecordEntity> newRecords) {
         this.records = newRecords;
+        expandedPositions.clear(); //重刷資料時先清空展開狀態
         notifyDataSetChanged();
     }
 
@@ -53,6 +55,26 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
         } else {
             holder.imgRecord.setImageResource(R.drawable.ic_launcher_foreground);
         }
+
+        // 是否展開
+        boolean isExpanded = expandedPositions.contains(position);
+        if (isExpanded) {
+            holder.tvNote.setMaxLines(Integer.MAX_VALUE);
+            holder.tvNote.setEllipsize(null);
+        } else {
+            holder.tvNote.setMaxLines(1);
+            holder.tvNote.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        }
+
+        // 點一下note:展開or收起
+        holder.itemView.setOnClickListener(v -> {
+            if (expandedPositions.contains(holder.getAdapterPosition())) {
+                expandedPositions.remove(holder.getAdapterPosition());
+            } else {
+                expandedPositions.add(holder.getAdapterPosition());
+            }
+            notifyItemChanged(holder.getAdapterPosition());
+        });
     }
 
     @Override
