@@ -21,4 +21,6 @@ public interface CategoryDao {
     public void deleteCategory(CategoryEntity categoryEntity);
     @Query("SELECT * FROM category ORDER BY cid ASC")
     public LiveData<List<CategoryEntity>> getAllCategories();
+    @Query("SELECT cid FROM category WHERE cname = :name LIMIT 1")
+    Integer getCidByName(String name);
 }
