@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -97,6 +98,17 @@ public class MainActivity extends AppCompatActivity {
         rvRecords.setLayoutManager(new LinearLayoutManager(this));
         recordAdapter = new RecordAdapter();
         rvRecords.setAdapter(recordAdapter);
+        // 在這裡設定動畫
+        /*DefaultItemAnimator animator = new DefaultItemAnimator();
+        animator.setAddDuration(150);
+        animator.setRemoveDuration(120);
+        animator.setMoveDuration(200);
+        animator.setChangeDuration(0);  // 避免 change 閃爍
+
+        // 這行非常重要：避免 DiffUtil 更新內容一直閃爍
+        animator.setSupportsChangeAnimations(false);
+
+        rvRecords.setItemAnimator(animator);*/
 
         // ===== 4) Spinner 設定（用專屬 Adapter）===== (上面的下拉清單)
         categorySpinnerAdapter = new CategorySpinnerAdapter(this, categoryList);
@@ -219,14 +231,14 @@ public class MainActivity extends AppCompatActivity {
                 r1.cid = tryFindCidByName("Passport");
                 r1.title = "Passport";
                 r1.note = "Renew before summer";
-                r1.expiredDate = "2026-05-01";
+                r1.expiredDate = "01/05/2026";
                 r1.imagePath = "/storage/emulated/0/Download/passport.jpg";
                 repository.insertRecord(r1);
 
                 RecordEntity b = new RecordEntity();
                 b.title = "Coupon - Billa";
                 b.cid = tryFindCidByName("Coupons");
-                b.expiredDate = "2026-02-03";
+                b.expiredDate = "03/02/2026";
                 repository.insertRecord(b);
             }
         });
@@ -306,7 +318,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private void filterData() {
         shownRecords.clear();
 

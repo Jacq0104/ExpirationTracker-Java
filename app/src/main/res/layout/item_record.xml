@@ -7,7 +7,16 @@
     android:gravity="center"
     android:background="?android:attr/selectableItemBackground">
 
-    <!-- 左邊放圖片 -->
+    <!-- 這是新增的：左側的顏色長方形 -->
+    <View
+        android:id="@+id/colorBar"
+        android:layout_width="8dp"
+        android:layout_height="match_parent"
+        android:layout_marginEnd="8dp"
+        android:background="#FF0000" />
+    <!-- 你之後可以在程式中動態改顏色 -->
+
+    <!-- 左邊圖片 -->
     <ImageView
         android:id="@+id/imgRecord"
         android:layout_width="60dp"
@@ -16,7 +25,7 @@
         android:layout_marginEnd="12dp"
         android:src="@drawable/ic_launcher_foreground" />
 
-    <!-- 右邊放文字欄位 -->
+    <!-- 右邊文字 -->
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="0dp"
