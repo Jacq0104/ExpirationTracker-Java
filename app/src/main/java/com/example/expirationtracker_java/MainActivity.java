@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
         rvRecords.setLayoutManager(new LinearLayoutManager(this));
         recordAdapter = new RecordAdapter();
         rvRecords.setAdapter(recordAdapter);
-        // 在這裡設定動畫
+        // 在這裡設定動畫animation
         /*DefaultItemAnimator animator = new DefaultItemAnimator();
         animator.setAddDuration(150);
         animator.setRemoveDuration(120);
