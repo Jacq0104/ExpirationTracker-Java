@@ -129,8 +129,6 @@ public class AddPage extends AppCompatActivity {
         });
 
 
-
-
         // Toolbar 返回箭頭功能
         toolbar.setNavigationOnClickListener(v -> {
             // 回主畫面
