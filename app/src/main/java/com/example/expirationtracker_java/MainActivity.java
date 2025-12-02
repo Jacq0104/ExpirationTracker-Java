@@ -323,7 +323,6 @@ public class MainActivity extends AppCompatActivity {
         shownRecords.clear();
 
         LocalDate today = LocalDate.now();
-        long soonDays = 14;
 
         for (RecordEntity r : allRecords) {
 
@@ -336,6 +335,7 @@ public class MainActivity extends AppCompatActivity {
             LocalDate expiry = LocalDate.parse(r.expiredDate, formatter);
             long daysDiff = java.time.temporal.ChronoUnit.DAYS.between(today, expiry);
 
+            long itemSoonDays = r.notifyDaysBefore;
             boolean pass = false;
 
             switch (currectFilter) {
@@ -348,11 +348,11 @@ public class MainActivity extends AppCompatActivity {
                     break;
 
                 case SOON:
-                    if (daysDiff >= 0 && daysDiff <= soonDays) pass = true;
+                    if (daysDiff >= 0 && daysDiff <= itemSoonDays) pass = true;
                     break;
 
                 case SAFE:
-                    if (daysDiff > soonDays) pass = true;
+                    if (daysDiff > itemSoonDays) pass = true;
                     break;
             }
 
