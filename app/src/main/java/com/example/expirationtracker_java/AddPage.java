@@ -22,6 +22,7 @@ public class AddPage extends AppCompatActivity {
     // declare the interface elements
     EditText editTitle, editDate, editNote;
     Spinner spinnerCategory;
+    Spinner spinnerNotifyDays;
     FloatingActionButton btnTakePhoto;
     ImageView imagePreview;
     FloatingActionButton fabSave;
@@ -37,6 +38,7 @@ public class AddPage extends AppCompatActivity {
     static final int REQUEST_IMAGE_PICK = 2;  // 「從相簿選圖片」用的 request code
     Uri photoUri;                             // 選到的圖的path
     String imagePath;
+    int selectedNotifyDays = 14;
 
 
     //添加category新增方式
@@ -77,6 +79,7 @@ public class AddPage extends AppCompatActivity {
         editDate = findViewById(R.id.editDate);
         editNote = findViewById(R.id.editNote);
         spinnerCategory = findViewById(R.id.spinnerCategory);
+        spinnerNotifyDays = findViewById(R.id.spinnerNotifyDays);
         btnTakePhoto = findViewById(R.id.btnTakePhoto);
         imagePreview = findViewById(R.id.imagePreview);
         fabSave = findViewById(R.id.fabSave);
@@ -166,6 +169,30 @@ public class AddPage extends AppCompatActivity {
 //            }
 //        });
 
+        // Notify me 的天數選項
+        Integer[] notifyOptions = {1, 3, 7, 14, 30};
+        ArrayAdapter<Integer> notifyAdapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_spinner_item,
+                notifyOptions
+        );
+        notifyAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerNotifyDays.setAdapter(notifyAdapter);
+
+        // 預設選在 14（index 3）
+        spinnerNotifyDays.setSelection(3);
+
+        spinnerNotifyDays.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, android.view.View view, int position, long id) {
+                selectedNotifyDays = notifyOptions[position];
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) { }
+        });
+
+
         // 從相簿選擇圖片
         btnTakePhoto.setOnClickListener(v -> {
             Intent pickIntent = new Intent(
@@ -220,6 +247,7 @@ public class AddPage extends AppCompatActivity {
             r.expiredDate = date;
             r.note = note;
             r.cid = cid;
+            r.notifyDaysBefore = selectedNotifyDays;  // 用使用者選的天數
             if (imagePath != null && !imagePath.isEmpty()) {
                 r.imagePath = imagePath;
             }

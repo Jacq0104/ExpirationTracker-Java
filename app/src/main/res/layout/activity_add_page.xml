@@ -49,6 +49,41 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
+            <LinearLayout
+                android:id="@+id/notifyLayout"
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:gravity="center"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/buttonstyle">
+
+                <TextView
+                    android:id="@+id/tvNotifyLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Notify me"
+                    android:textSize="18sp"
+                    android:textColor="@android:color/black" />
+
+                <Spinner
+                    android:id="@+id/spinnerNotifyDays"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="8dp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp" />
+
+                <TextView
+                    android:id="@+id/tvNotifySuffix"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="days before"
+                    android:textSize="18sp"
+                    android:textColor="@android:color/black" />
+            </LinearLayout>
+
             <!-- take picture -->
             <FrameLayout
                 android:layout_width="wrap_content"

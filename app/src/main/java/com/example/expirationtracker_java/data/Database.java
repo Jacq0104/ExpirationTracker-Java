@@ -10,7 +10,7 @@ import com.example.expirationtracker_java.data.dao.RecordDao;
 import com.example.expirationtracker_java.data.entity.CategoryEntity;
 import com.example.expirationtracker_java.data.entity.RecordEntity;
 
-@androidx.room.Database(entities = {RecordEntity.class, CategoryEntity.class}, version = 1)
+@androidx.room.Database(entities = {RecordEntity.class, CategoryEntity.class}, version = 2, exportSchema = false)
 public abstract class Database extends RoomDatabase {
     private static volatile Database INSTANCE;
     public abstract RecordDao recordDao();
@@ -23,7 +23,10 @@ public abstract class Database extends RoomDatabase {
                     INSTANCE = Room.databaseBuilder(
                             context.getApplicationContext(),
                             Database.class, "expiration_db"
-                    ).build();
+                    )
+                            // 開發階段(不用migration)：版本變化(升級)就整個 DB 砍掉重建
+                            .fallbackToDestructiveMigration()
+                            .build();
                 }
             }
         }

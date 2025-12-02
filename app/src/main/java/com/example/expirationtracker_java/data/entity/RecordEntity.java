@@ -13,4 +13,7 @@ public class RecordEntity {
     //    room 不能存時間戳記
     public String expiredDate;
     public String imagePath;
+
+    // 提醒的天數（預設 14）
+    public int notifyDaysBefore = 14;
 }

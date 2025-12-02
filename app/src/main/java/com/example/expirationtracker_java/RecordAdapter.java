@@ -97,8 +97,11 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
                         java.time.LocalDate.parse(record.expiredDate, formatter);
 
                 long daysDiff = java.time.temporal.ChronoUnit.DAYS.between(today, expiry);
+                // 如果這筆沒有設定（預設 0），就當作 14
+                long soonDays = (record.notifyDaysBefore > 0) ? record.notifyDaysBefore : 14;
+
                 int color;
-                long soonDays = 14;
+//                long soonDays = 14;
                 if (daysDiff < 0) {
                     color = android.graphics.Color.parseColor("#D32F2F"); // 深紅
                 } else if (daysDiff >= 0 && daysDiff <= soonDays) {
