@@ -22,4 +22,9 @@ public interface RecordDao {
     public void deleteRecord(RecordEntity recordEntity);
     @Query("SELECT * FROM record ORDER BY expiredDate ASC")
     public LiveData<List<RecordEntity>> getAllRecords();
+
+    //let notification can read the whole data to calculate the 'soon'
+    @Query("SELECT * FROM record")
+    List<RecordEntity> getAll();
+
 }

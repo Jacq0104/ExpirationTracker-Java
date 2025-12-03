@@ -30,6 +30,26 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+
+import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
+
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+//test notification
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkRequest;
+
+
+
 public class MainActivity extends AppCompatActivity {
 
     // Data / repo
@@ -73,6 +93,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
+
+        askNotificationPermission();
+
+        createNotificationChannel();
+//        scheduleTestNotification(); //test notification
+        scheduleDailySoonCheck();
 
         // 邊界處理（保留原始設定）
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -360,6 +386,91 @@ public class MainActivity extends AppCompatActivity {
         }
 
         recordAdapter.setRecords(shownRecords);
+    }
+
+    private void createNotificationChannel() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            String channelId = "expiry_channel";
+            String channelName = "Expiration Reminder";
+            String channelDesc = "Notify when items are nearing expiration";
+
+            int importance = android.app.NotificationManager.IMPORTANCE_DEFAULT;
+            android.app.NotificationChannel channel =
+                    new android.app.NotificationChannel(channelId, channelName, importance);
+            channel.setDescription(channelDesc);
+
+            android.app.NotificationManager manager =
+                    getSystemService(android.app.NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
+    }
+
+    //run worker to daily check the soon item, and send notification
+    private void scheduleDailySoonCheck() {
+        Calendar now = Calendar.getInstance();
+        Calendar nextRun = Calendar.getInstance();
+
+        // set the notification time
+        nextRun.set(Calendar.HOUR_OF_DAY, 0);
+        nextRun.set(Calendar.MINUTE, 46);
+        nextRun.set(Calendar.SECOND, 0);
+        nextRun.set(Calendar.MILLISECOND, 0);
+
+        // if notification time was past, it would be sent tomorrow
+        if (nextRun.before(now)) {
+            nextRun.add(Calendar.DAY_OF_MONTH, 1);
+        }
+
+        // calculate the working period
+        long initialDelay = nextRun.getTimeInMillis() - now.getTimeInMillis();
+
+        // build the worker constraint　(let the worker work in low battery mode)
+        Constraints constraints = new Constraints.Builder()
+                .setRequiresBatteryNotLow(false)
+                .build();
+
+        // build the period worker (once a day)
+        PeriodicWorkRequest request =
+                new PeriodicWorkRequest.Builder(Notification.class, 1, TimeUnit.DAYS) // daily
+                        .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+                        .setConstraints(constraints)
+                        .build();
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "soon_daily_check",
+                ExistingPeriodicWorkPolicy.REPLACE,  // ❗ 用 REPLACE/UPDATE，別用 KEEP
+                request
+        );
+    }
+
+
+//    //test notification ( notify after running the app for 5 sec)
+//    private void scheduleTestNotification() {
+//        WorkRequest request =
+//                new OneTimeWorkRequest.Builder(Notification.class)
+//                        .setInitialDelay(5, TimeUnit.SECONDS)
+//                        .build();
+//
+//        WorkManager.getInstance(this).enqueue(request);
+//    }
+
+    // need to ask the user "if allow the app to send the notification"
+    private void askNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13 (API 33) above -> new rule
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED) {
+
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        1001
+                );
+            }
+        }
     }
 
 }
