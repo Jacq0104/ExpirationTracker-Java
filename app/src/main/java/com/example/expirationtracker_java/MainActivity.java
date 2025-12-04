@@ -413,8 +413,8 @@ public class MainActivity extends AppCompatActivity {
         Calendar nextRun = Calendar.getInstance();
 
         // set the notification time
-        nextRun.set(Calendar.HOUR_OF_DAY, 0);
-        nextRun.set(Calendar.MINUTE, 46);
+        nextRun.set(Calendar.HOUR_OF_DAY, 20);
+        nextRun.set(Calendar.MINUTE, 20);
         nextRun.set(Calendar.SECOND, 0);
         nextRun.set(Calendar.MILLISECOND, 0);
 
@@ -440,7 +440,7 @@ public class MainActivity extends AppCompatActivity {
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
                 "soon_daily_check",
-                ExistingPeriodicWorkPolicy.REPLACE,  // ❗ 用 REPLACE/UPDATE，別用 KEEP
+                ExistingPeriodicWorkPolicy.UPDATE,  // use REPLACE/UPDATE，not KEEP
                 request
         );
     }
