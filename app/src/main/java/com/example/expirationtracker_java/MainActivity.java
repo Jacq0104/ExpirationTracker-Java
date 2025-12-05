@@ -48,6 +48,9 @@ import androidx.core.content.ContextCompat;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkRequest;
 
+//swipe to delete or edit
+import androidx.recyclerview.widget.ItemTouchHelper;
+
 
 
 public class MainActivity extends AppCompatActivity {
@@ -278,10 +281,43 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+        ItemTouchHelper.SimpleCallback swipeCallback =
+                new ItemTouchHelper.SimpleCallback(0,
+                        ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+
+                    @Override
+                    public boolean onMove(RecyclerView recyclerView,
+                                          RecyclerView.ViewHolder viewHolder,
+                                          RecyclerView.ViewHolder target) {
+                        // 不做拖曳排序，直接回 false
+                        return false;
+                    }
+
+                    @Override
+                    public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+                        int position = viewHolder.getAdapterPosition();
+                        RecordEntity record = recordAdapter.getRecordAt(position);
+                        if (record == null) return;
+
+                        if (direction == ItemTouchHelper.LEFT) {
+                            // swipe from right to left：delete
+                            repository.deleteRecord(record);
+
+                        } else if (direction == ItemTouchHelper.RIGHT) {
+                            // swipe from left to right：edit
+                            openEditPage(record);
+                            // get item back to original position
+                            recordAdapter.notifyItemChanged(position);
+                        }
+                    }
+                };
+
+        new ItemTouchHelper(swipeCallback).attachToRecyclerView(rvRecords);
+
         // 刪除item
-        recordAdapter.setOnDeleteClickListener(record -> {
-            repository.deleteRecord(record);
-        });
+//        recordAdapter.setOnDeleteClickListener(record -> {
+//            repository.deleteRecord(record);
+//        });
     }
 
     /** 依 selectedCid 過濾 allRecords，丟給 RecyclerView */
@@ -433,7 +469,7 @@ public class MainActivity extends AppCompatActivity {
 
         // build the period worker (once a day)
         PeriodicWorkRequest request =
-                new PeriodicWorkRequest.Builder(Notification.class, 1, TimeUnit.DAYS) // daily
+                new PeriodicWorkRequest.Builder(Notification.class, 1, TimeUnit.MINUTES) // daily
                         .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
                         .setConstraints(constraints)
                         .build();
@@ -471,6 +507,13 @@ public class MainActivity extends AppCompatActivity {
                 );
             }
         }
+    }
+
+    private void openEditPage(RecordEntity record) {
+        Intent intent = new Intent(MainActivity.this, AddPage.class);
+        intent.putExtra("mode", "edit");
+        intent.putExtra("record_id", record.rid);
+        startActivity(intent);
     }
 
 }

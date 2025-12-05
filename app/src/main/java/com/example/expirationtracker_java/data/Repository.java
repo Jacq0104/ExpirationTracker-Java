@@ -46,4 +46,15 @@ public class Repository {
     public void deleteCategory(CategoryEntity category) {
         executor.execute(() -> categoryDao.deleteCategory(category));
     }
+
+    // get a record by id
+    public LiveData<RecordEntity> getRecordById(int id) {
+        return recordDao.getById(id);
+    }
+
+    // update Record
+    public void updateRecord(RecordEntity r) {
+        executor.execute(() -> recordDao.update(r));
+    }
+
 }

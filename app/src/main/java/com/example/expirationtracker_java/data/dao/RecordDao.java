@@ -27,4 +27,11 @@ public interface RecordDao {
     @Query("SELECT * FROM record")
     List<RecordEntity> getAll();
 
+    // search by rid
+    @Query("SELECT * FROM record WHERE rid = :id LIMIT 1")
+    LiveData<RecordEntity> getById(int id);
+
+    @Update
+    void update(RecordEntity record);
+
 }

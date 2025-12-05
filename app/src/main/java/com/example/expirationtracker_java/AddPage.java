@@ -40,6 +40,12 @@ public class AddPage extends AppCompatActivity {
     String imagePath;
     int selectedNotifyDays = 14;
 
+    // about edit
+    private boolean isEditMode = false;
+    private int editingRecordId = -1;
+    private RecordEntity editingRecord;
+    private final Integer[] notifyOptions = {1, 3, 7, 14, 30};
+
 
     //添加category新增方式
     private void showAddCategoryDialog() {
@@ -88,6 +94,13 @@ public class AddPage extends AppCompatActivity {
         // 建 Repository
         repository = new Repository(getApplication());
 
+        // whether the edit data brought from MainActivity
+        Intent intent = getIntent();
+        if (intent != null && "edit".equals(intent.getStringExtra("mode"))) {
+            isEditMode = true;
+            editingRecordId = intent.getIntExtra("record_id", -1);
+        }
+
         // 建 Spinner 的 adapter（用你們自己寫的 CategorySpinnerAdapter）
         categorySpinnerAdapter = new CategorySpinnerAdapter(this, categoryList);
         spinnerCategory.setAdapter(categorySpinnerAdapter);
@@ -132,8 +145,7 @@ public class AddPage extends AppCompatActivity {
         // Toolbar 返回箭頭功能
         toolbar.setNavigationOnClickListener(v -> {
             // 回主畫面
-            Intent intent = new Intent(AddPage.this, MainActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(AddPage.this, MainActivity.class));
             finish(); // 關閉目前的 AddPage
         });
 
@@ -168,7 +180,6 @@ public class AddPage extends AppCompatActivity {
 //        });
 
         // Notify me 的天數選項
-        Integer[] notifyOptions = {1, 3, 7, 14, 30};
         ArrayAdapter<Integer> notifyAdapter = new ArrayAdapter<>(
                 this,
                 android.R.layout.simple_spinner_item,
@@ -206,56 +217,120 @@ public class AddPage extends AppCompatActivity {
             String date = editDate.getText().toString();
             String note = editNote.getText().toString();
 
-            // 防呆: 檢查 title
+            // error prevention: check title
             if (title.isEmpty()) {
                 editTitle.setError("Title is required");
                 editTitle.requestFocus();
-                Toast.makeText(this, "請先輸入 Title", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please enter Title", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // 防呆: 檢查 date
+            // check date
             if (date.isEmpty()) {
                 editDate.setError("Expiration Date is required");
                 editDate.requestFocus();
-                Toast.makeText(this, "請先選擇 Expiration Date", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please choose Expiration Date", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             //String category = spinnerCategory.getSelectedItem().toString();
             CategoryEntity selected = (CategoryEntity) spinnerCategory.getSelectedItem();
-            //防呆:檢查category
+            //check category
             // 怕使用者在添加新的category選add new category就直接按save(這樣cid=-1會存進去database)
             if (selected == null || selected.cid == -1) {
-                Toast.makeText(this, "請先選擇一個分類", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please choose a category", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             int cid = selected.cid;           // 要存到 Record 的外鍵
             String categoryName = selected.cname; // 要顯示在 Toast 才用到
 
-            // UI: show simple words after clicking the save fab
-            Toast.makeText(this,
-                    "Saved: " + title + " (" + categoryName + ")",
-                    Toast.LENGTH_SHORT).show();
+            if (isEditMode && editingRecord != null) {
+                // edit mode：update the previous one
+                editingRecord.title = title;
+                editingRecord.expiredDate = date;
+                editingRecord.note = note;
+                editingRecord.cid = cid;
+                editingRecord.notifyDaysBefore = selectedNotifyDays;
+                if (imagePath != null && !imagePath.isEmpty()) {
+                    editingRecord.imagePath = imagePath;
+                }
 
-            // 寫進資料庫!!!
-            RecordEntity r = new RecordEntity();
-            r.title = title;
-            r.expiredDate = date;
-            r.note = note;
-            r.cid = cid;
-            r.notifyDaysBefore = selectedNotifyDays;  // 用使用者選的天數
-            if (imagePath != null && !imagePath.isEmpty()) {
-                r.imagePath = imagePath;
+                repository.updateRecord(editingRecord);
+                Toast.makeText(this,
+                        "Updated: " + title + " (" + categoryName + ")",
+                        Toast.LENGTH_SHORT).show();
+
+            } else {
+                // add mode：insert new data
+                RecordEntity r = new RecordEntity();
+                r.title = title;
+                r.expiredDate = date;
+                r.note = note;
+                r.cid = cid;
+                r.notifyDaysBefore = selectedNotifyDays;
+                if (imagePath != null && !imagePath.isEmpty()) {
+                    r.imagePath = imagePath;
+                }
+
+                repository.insertRecord(r);
+                Toast.makeText(this,
+                        "Saved: " + title + " (" + categoryName + ")",
+                        Toast.LENGTH_SHORT).show();
             }
 
-            repository.insertRecord(r);
-
-            // 回主畫面
-            Intent intent = new Intent(AddPage.this, MainActivity.class);
-            startActivity(intent);
+            // back to main page
+            Intent back = new Intent(AddPage.this, MainActivity.class);
+            startActivity(back);
             finish();
+        });
+
+        // if it's edit mode and get the id-> show the previous data
+        if (isEditMode && editingRecordId != -1) {
+            loadRecordForEdit(editingRecordId);
+        }
+    }
+
+    private void loadRecordForEdit(int rid) {
+        repository.getRecordById(rid).observe(this, record -> {
+            if (record == null) return;
+            editingRecord = record;
+
+            // fill in UI blank
+            editTitle.setText(record.title != null ? record.title : "");
+            editDate.setText(record.expiredDate != null ? record.expiredDate : "");
+            editNote.setText(record.note != null ? record.note : "");
+
+            // picture
+            if (record.imagePath != null && !record.imagePath.isEmpty()) {
+                imagePath = record.imagePath;
+                try {
+                    imagePreview.setImageURI(Uri.parse(imagePath));
+                } catch (Exception ignored) { }
+            }
+
+            // choose the right category by cid
+            if (record.cid != 0) {
+                for (int i = 0; i < categoryList.size(); i++) {
+                    if (categoryList.get(i).cid == record.cid) {
+                        spinnerCategory.setSelection(i);
+                        break;
+                    }
+                }
+            }
+
+            // Notify days spinner
+            int index = 3; // default= 14
+            if (record.notifyDaysBefore > 0) {
+                for (int i = 0; i < notifyOptions.length; i++) {
+                    if (notifyOptions[i] == record.notifyDaysBefore) {
+                        index = i;
+                        break;
+                    }
+                }
+            }
+            spinnerNotifyDays.setSelection(index);
+            selectedNotifyDays = notifyOptions[index];
         });
     }
 

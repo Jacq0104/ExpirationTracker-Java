@@ -25,7 +25,7 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
     private List<RecordEntity> records = new ArrayList<>();
     private java.util.Set<Integer> expandedPositions = new java.util.HashSet<>();
 
-    public interface onDeleteClickListener {
+    /*public interface onDeleteClickListener {
         void onDeleteClick(RecordEntity record);
     }
 
@@ -33,12 +33,20 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
 
     public void setOnDeleteClickListener(onDeleteClickListener listener) {
         this.deleteListener = listener;
-    }
+    }*/
     public void setRecords(List<RecordEntity> newRecords) {
         this.records = newRecords;
         expandedPositions.clear();
         notifyDataSetChanged();
     }
+
+    //get the item id from record (if id exist, then edit; if not, then use the blank add page)
+    //Let MainActivity can get the record by position
+    public RecordEntity getRecordAt(int position) {
+        if (records == null || position < 0 || position >= records.size()) return null;
+        return records.get(position);
+    }
+
     /*public void setRecords(List<RecordEntity> newRecords) {//animation
         // 1. 先複製舊資料
         List<RecordEntity> oldList = new ArrayList<>(this.records);
@@ -144,11 +152,11 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
             notifyItemChanged(holder.getAdapterPosition());
         });
 
-        holder.deleteBtn.setOnClickListener(v -> {
+        /*holder.deleteBtn.setOnClickListener(v -> {
             if (deleteListener != null) {
                 deleteListener.onDeleteClick(record);
             }
-        });
+        });*/
     }
 
     @Override
@@ -159,7 +167,7 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
     static class RecordViewHolder extends RecyclerView.ViewHolder {
         TextView tvTitle, tvNote, tvExpired;
         ImageView imgRecord;
-        ImageButton deleteBtn;
+//        ImageButton deleteBtn;
         View colorBar;
 
         public RecordViewHolder(@NonNull View itemView) {
@@ -168,7 +176,7 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
             tvNote = itemView.findViewById(R.id.tvNote);
             tvExpired = itemView.findViewById(R.id.tvExpired);
             imgRecord = itemView.findViewById(R.id.imgRecord);
-            deleteBtn = itemView.findViewById(R.id.deleteBtn);
+//            deleteBtn = itemView.findViewById(R.id.deleteBtn);
             colorBar = itemView.findViewById(R.id.colorBar);
         }
     }
