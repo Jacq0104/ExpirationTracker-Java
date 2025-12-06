@@ -51,6 +51,14 @@ import androidx.work.WorkRequest;
 //swipe to delete or edit
 import androidx.recyclerview.widget.ItemTouchHelper;
 
+import android.graphics.Canvas;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+
+import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;   // about transparency
+
+
 
 
 public class MainActivity extends AppCompatActivity {
@@ -285,16 +293,26 @@ public class MainActivity extends AppCompatActivity {
                 new ItemTouchHelper.SimpleCallback(0,
                         ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
 
+                    private final ColorDrawable background = new ColorDrawable();
+                    private final int deleteColor =
+                            ContextCompat.getColor(MainActivity.this, R.color.swipe_delete_red);
+                    private final int editColor =
+                            ContextCompat.getColor(MainActivity.this, R.color.swipe_edit_gray);
+                    private final Drawable deleteIcon =
+                            ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_delete_white_24dp);
+                    private final Drawable editIcon =
+                            ContextCompat.getDrawable(MainActivity.this, R.drawable.ic_edit_white_24dp);
+
                     @Override
-                    public boolean onMove(RecyclerView recyclerView,
-                                          RecyclerView.ViewHolder viewHolder,
-                                          RecyclerView.ViewHolder target) {
-                        // 不做拖曳排序，直接回 false
+                    public boolean onMove(@NonNull RecyclerView recyclerView,
+                                          @NonNull RecyclerView.ViewHolder viewHolder,
+                                          @NonNull RecyclerView.ViewHolder target) {
+                        // false -> no dragging sort
                         return false;
                     }
 
                     @Override
-                    public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+                    public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                         int position = viewHolder.getAdapterPosition();
                         RecordEntity record = recordAdapter.getRecordAt(position);
                         if (record == null) return;
@@ -306,9 +324,101 @@ public class MainActivity extends AppCompatActivity {
                         } else if (direction == ItemTouchHelper.RIGHT) {
                             // swipe from left to right：edit
                             openEditPage(record);
-                            // get item back to original position
-                            recordAdapter.notifyItemChanged(position);
                         }
+                        // get item back to original position
+                        recordAdapter.notifyItemChanged(position);
+                    }
+
+                    //when swiping
+                    @Override
+                    public void onChildDraw(@NonNull Canvas c,
+                                            @NonNull RecyclerView recyclerView,
+                                            @NonNull RecyclerView.ViewHolder viewHolder,
+                                            float dX, float dY,
+                                            int actionState,
+                                            boolean isCurrentlyActive) {
+
+                        View itemView = viewHolder.itemView;
+                        int itemHeight = itemView.getBottom() - itemView.getTop();
+
+                        if (dX > 0) {
+                            // swipe to right：edit（gray background + edit icon）
+
+                            // 1. calculating swiping progress（0 ~ 1）
+                            float progress = Math.min(1f, dX / itemView.getWidth());
+
+                            // 2. convert swiping progress into alpha（40 ~ 255，prevent from no color at the beginning）
+                            int alpha = (int) (40 + 215 * progress);   // 40 + 215 = 255
+
+                            // 3. ColorUtils with alpha
+                            int colorWithAlpha = ColorUtils.setAlphaComponent(editColor, alpha);
+
+                            // 4. set background
+                            background.setColor(colorWithAlpha);
+                            background.setBounds(
+                                    itemView.getLeft(),
+                                    itemView.getTop(),
+                                    itemView.getLeft() + (int) dX,
+                                    itemView.getBottom()
+                            );
+                            background.draw(c);
+
+                            if (editIcon != null) {
+                                int iconWidth = editIcon.getIntrinsicWidth();
+                                int iconHeight = editIcon.getIntrinsicHeight();
+                                int margin = dpToPx(24);
+
+                                // when swiping over the width of icon -> show icon
+                                if (dX > iconWidth + margin * 2) {
+                                    int iconLeft = itemView.getLeft() + margin;
+                                    int iconRight = iconLeft + iconWidth;
+                                    int iconTop = itemView.getTop() + (itemHeight - iconHeight) / 2;
+                                    int iconBottom = iconTop + iconHeight;
+
+                                    editIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                                    editIcon.draw(c);
+                                }
+                            }
+
+
+                        } else if (dX < 0) {
+                            // swipe to left：delete（red background + delete icon）
+                            float progress = Math.min(1f, Math.abs(dX) / itemView.getWidth());
+                            int alpha = (int) (120 + 105 * progress);
+                            int colorWithAlpha = ColorUtils.setAlphaComponent(deleteColor, alpha);
+
+                            background.setColor(colorWithAlpha);
+                            background.setBounds(
+                                    itemView.getRight() + (int) dX,
+                                    itemView.getTop(),
+                                    itemView.getRight(),
+                                    itemView.getBottom()
+                            );
+                            background.draw(c);
+
+                            if (deleteIcon != null) {
+                                int iconWidth = deleteIcon.getIntrinsicWidth();
+                                int iconHeight = deleteIcon.getIntrinsicHeight();
+                                int margin = dpToPx(24);
+
+                                // show the icon when swiping over the certain width
+                                if (Math.abs(dX) > iconWidth + margin * 2) {
+                                    int iconRight = itemView.getRight() - margin;
+                                    int iconLeft = iconRight - iconWidth;
+                                    int iconTop = itemView.getTop() + (itemHeight - iconHeight) / 2;
+                                    int iconBottom = iconTop + iconHeight;
+
+                                    deleteIcon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                                    deleteIcon.draw(c);
+                                }
+                            }
+
+                        } else {
+                            // no swiping at all
+                            background.setBounds(0, 0, 0, 0);
+                        }
+
+                        super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
                     }
                 };
 
@@ -514,6 +624,11 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra("mode", "edit");
         intent.putExtra("record_id", record.rid);
         startActivity(intent);
+    }
+
+    // dp convert to px -> let onChildDraw can calculate the icon location
+    private int dpToPx(int dp) {
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 
 }
