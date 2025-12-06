@@ -59,8 +59,6 @@ import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;   // about transparency
 
 
-
-
 public class MainActivity extends AppCompatActivity {
 
     // Data / repo
