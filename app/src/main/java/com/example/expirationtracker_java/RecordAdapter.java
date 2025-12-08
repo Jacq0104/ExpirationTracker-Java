@@ -19,6 +19,7 @@ import java.util.List;
 
 import androidx.recyclerview.widget.DiffUtil;
 import com.example.expirationtracker_java.data.entity.RecordEntity;
+import android.net.Uri;
 
 public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordViewHolder> {
 
@@ -85,17 +86,19 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
         holder.tvNote.setText(record.note != null ? record.note : "");
         holder.tvExpired.setText(record.expiredDate != null ? record.expiredDate : "");
 
-        // 綁定圖片
+        // 綁定圖片（支援 content:// URI）
         if (record.imagePath != null && !record.imagePath.isEmpty()) {
-            File imgFile = new File(record.imagePath);
-            if (imgFile.exists()) {
-                holder.imgRecord.setImageBitmap(BitmapFactory.decodeFile(imgFile.getAbsolutePath()));
-            } else {
-                holder.imgRecord.setImageResource(R.drawable.ic_launcher_foreground); // 預設圖
+            try {
+                Uri uri = Uri.parse(record.imagePath);
+                holder.imgRecord.setImageURI(uri);
+            } catch (Exception e) {
+                holder.imgRecord.setImageResource(R.drawable.ic_launcher_foreground);
             }
         } else {
             holder.imgRecord.setImageResource(R.drawable.ic_launcher_foreground);
         }
+
+
 
         // === 這裡開始：根據到期日設定顏色 ===
         if (record.expiredDate != null && !record.expiredDate.isEmpty()) {

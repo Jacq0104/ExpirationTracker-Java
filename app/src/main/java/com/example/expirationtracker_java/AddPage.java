@@ -285,7 +285,7 @@ public class AddPage extends AppCompatActivity {
             finish();
         });
 
-        // if it's edit mode and get the id-> show the previous data
+        // if it's edit mode and get the id-> show the previous dataA
         if (isEditMode && editingRecordId != -1) {
             loadRecordForEdit(editingRecordId);
         }
