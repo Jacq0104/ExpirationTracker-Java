@@ -3,6 +3,6 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <color name="swipe_delete_red">#F44336</color>
-    <color name="swipe_edit_gray">#9D9D9D</color>
+    <color name="swipe_delete_red">#FF0000</color>
+    <color name="swipe_edit_gray">#E0E0E0</color>
 </resources>

@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center"
-    android:background="?android:attr/selectableItemBackground">
+    android:background="?attr/colorSurface">
 
     <!-- 這是新增的：左側的顏色長方形 -->
     <View
@@ -39,7 +39,7 @@
             android:text="Title"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="@android:color/black"/>
+            android:textColor="?attr/colorOnSurface"/>
 
         <TextView
             android:id="@+id/tvNote"
@@ -47,7 +47,7 @@
             android:layout_height="wrap_content"
             android:text="Note content"
             android:textSize="14sp"
-            android:textColor="@android:color/darker_gray"/>
+            android:textColor="?attr/colorOnSurface"/>
 
         <TextView
             android:id="@+id/tvExpired"

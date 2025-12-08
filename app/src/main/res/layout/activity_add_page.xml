@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
     tools:context=".AddPage">
 
     <!-- the toppest row show add the 'New' word -->
@@ -11,11 +12,12 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorOutline"
+        android:background="?attr/colorSurface"
         android:title="New"
-        android:titleTextColor="@android:color/white"
+        android:titleTextColor="?attr/colorOnSurface"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:navigationContentDescription="Back" />
+        app:navigationContentDescription="Back"
+        app:navigationIconTint="?attr/colorOnSurface"/>
 
     <!-- content rows -->
     <ScrollView
@@ -35,7 +37,9 @@
                 android:id="@+id/editTitle"
                 android:hint="Title"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:textColor="?attr/colorOnSurface"
+                android:textColorHint="?attr/colorOnSurfaceVariant"/>
 
             <EditText
                 android:id="@+id/editDate"
@@ -56,7 +60,7 @@
                 android:layout_height="48dp"
                 android:gravity="center"
                 android:layout_marginTop="10dp"
-                android:background="@drawable/buttonstyle">
+                android:background="?attr/colorSurfaceVariant">
 
                 <TextView
                     android:id="@+id/tvNotifyLabel"
@@ -64,7 +68,7 @@
                     android:layout_height="wrap_content"
                     android:text="Notify me"
                     android:textSize="18sp"
-                    android:textColor="@android:color/black" />
+                    android:textColor="?attr/colorOnSurface" />
 
                 <Spinner
                     android:id="@+id/spinnerNotifyDays"
@@ -81,7 +85,7 @@
                     android:layout_marginStart="8dp"
                     android:text="days before"
                     android:textSize="18sp"
-                    android:textColor="@android:color/black" />
+                    android:textColor="?attr/colorOnSurface" />
             </LinearLayout>
 
             <!-- take picture -->
@@ -108,8 +112,8 @@
                     android:layout_margin="0dp"
                     android:contentDescription="Take Photo"
                     app:srcCompat="@drawable/ic_takepic"
-                    app:tint="@android:color/black"
-                    app:backgroundTint="#E0E0E0"
+                    app:tint="?attr/colorOnSurface"
+                    app:backgroundTint="?attr/colorSurfaceVariant"
                     />
             </FrameLayout>
 
@@ -119,7 +123,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:minHeight="100dp"
-                android:gravity="top" />
+                android:gravity="top"
+                android:textColor="?attr/colorOnSurface"
+                android:textColorHint="?attr/colorOnSurfaceVariant"/>
 
         </LinearLayout>
     </ScrollView>
@@ -133,8 +139,8 @@
         android:layout_margin="24dp"
         android:contentDescription="Save"
         app:srcCompat="@drawable/ic_check"
-        app:tint="@android:color/black"
-        app:backgroundTint="#E0E0E0" />
+        app:tint="?attr/colorOnSurface"
+        app:backgroundTint="?attr/colorSurfaceVariant" />
 
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

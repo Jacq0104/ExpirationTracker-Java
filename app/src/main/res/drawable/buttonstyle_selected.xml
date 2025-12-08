@@ -6,7 +6,7 @@
         android:width="1dp"
         android:color="@color/black" />
 
-    <solid android:color="#FFD966" /> <!-- 選取狀態底色，可調整 -->
+    <solid android:color="#C6A300" /> <!-- 選取狀態底色，可調整 -->
 
     <corners android:radius="10dp" />
 
