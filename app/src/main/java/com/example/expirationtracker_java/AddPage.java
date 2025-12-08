@@ -16,6 +16,14 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.Calendar;
 import com.google.android.material.appbar.MaterialToolbar;
 
+//for save images path from users
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.FileOutputStream;
 
 public class AddPage extends AppCompatActivity {
 
@@ -291,6 +299,46 @@ public class AddPage extends AppCompatActivity {
         }
     }
 
+    // image path from user album: content:// Uri -> /data/data/app/files/images/xxx.jpg
+    // save the converting path into DB
+    private String copyImageToInternalStorage(Uri uri) {
+        if (uri == null) return null;
+
+        try {
+            // 1. build the images dir for app
+            File imagesDir = new File(getFilesDir(), "images");
+            if (!imagesDir.exists()) {
+                imagesDir.mkdirs();
+            }
+
+            // 2. build the image name (avoid the same name)
+            String fileName = "img_" + System.currentTimeMillis() + ".jpg";
+            File destFile = new File(imagesDir, fileName);
+
+            // 3. use ContentResolver read content://，then write into our own app
+            InputStream in = getContentResolver().openInputStream(uri);
+            if (in == null) return null;
+
+            OutputStream out = new FileOutputStream(destFile);
+            byte[] buffer = new byte[4096];
+            int len;
+            while ((len = in.read(buffer)) != -1) {
+                out.write(buffer, 0, len);
+            }
+
+            in.close();
+            out.flush();
+            out.close();
+
+            // 4. return the image path in this app
+            return destFile.getAbsolutePath();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     private void loadRecordForEdit(int rid) {
         repository.getRecordById(rid).observe(this, record -> {
             if (record == null) return;
@@ -304,9 +352,17 @@ public class AddPage extends AppCompatActivity {
             // picture
             if (record.imagePath != null && !record.imagePath.isEmpty()) {
                 imagePath = record.imagePath;
+
                 try {
-                    imagePreview.setImageURI(Uri.parse(imagePath));
-                } catch (Exception ignored) { }
+                    Bitmap bmp = BitmapFactory.decodeFile(imagePath);
+                    if (bmp != null) {
+                        imagePreview.setImageBitmap(bmp);
+                    } else {
+                        imagePreview.setImageResource(R.drawable.ic_launcher_foreground);
+                    }
+                } catch (Exception ignored) {
+                    imagePreview.setImageResource(R.drawable.ic_launcher_foreground);
+                }
             }
 
             // choose the right category by cid
@@ -340,11 +396,26 @@ public class AddPage extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == REQUEST_IMAGE_PICK && resultCode == RESULT_OK && data != null) {
-            // 使用者從相簿挑選一張圖片
-            photoUri = data.getData();          // photo path
-            if (photoUri != null) {
-                imagePreview.setImageURI(photoUri);   // 圓圈裡顯示圖片
-                imagePath = photoUri.toString();      // Uri 字串存進 DB
+            // user choose a pic from album（content://）
+            Uri pickedUri = data.getData();
+            if (pickedUri != null) {
+
+                // duplicate into app storage
+                String savedPath = copyImageToInternalStorage(pickedUri);
+
+                if (savedPath != null) {
+                    imagePath = savedPath;
+
+                    Bitmap bmp = BitmapFactory.decodeFile(savedPath);
+                    if (bmp != null) {
+                        imagePreview.setImageBitmap(bmp);
+                    } else {
+                        imagePreview.setImageResource(R.drawable.ic_launcher_foreground);
+                    }
+                } else {
+                    imagePreview.setImageResource(R.drawable.ic_launcher_foreground);
+                    imagePath = null;
+                }
             }
         }
     }
