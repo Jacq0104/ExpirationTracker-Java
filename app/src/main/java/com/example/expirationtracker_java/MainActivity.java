@@ -1,63 +1,47 @@
 package com.example.expirationtracker_java;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Canvas;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.Spinner;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import com.example.expirationtracker_java.data.Repository;
 import com.example.expirationtracker_java.data.entity.CategoryEntity;
 import com.example.expirationtracker_java.data.entity.RecordEntity;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import java.util.ArrayList;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-
-import androidx.work.Constraints;
-import androidx.work.ExistingPeriodicWorkPolicy;
-import androidx.work.PeriodicWorkRequest;
-import androidx.work.WorkManager;
-
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.os.Build;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
-//test notification
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.WorkRequest;
-
-//swipe to delete or edit
-import androidx.recyclerview.widget.ItemTouchHelper;
-
-import android.graphics.Canvas;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
-
-import androidx.annotation.NonNull;
-import androidx.core.graphics.ColorUtils;   // about transparency
-
 
 public class MainActivity extends AppCompatActivity {
 
@@ -73,29 +57,33 @@ public class MainActivity extends AppCompatActivity {
     // RecyclerView
     private RecyclerView rvRecords;
     private RecordAdapter recordAdapter;
-    private final List<RecordEntity> allRecords = new ArrayList<>(); // 觀察到的全量
+    private final List<RecordEntity> allRecords = new ArrayList<>();   // 觀察到的全量
     private final List<RecordEntity> shownRecords = new ArrayList<>(); // 目前顯示的
-    private Button deleteBtn;
 
-    //add button
-    FloatingActionButton fabAdd;
+    // Add button
+    private FloatingActionButton fabAdd;
+
     // SearchView
     private SearchView searchView;
-
     private View rootView;
 
+    // Filter 狀態
     enum FilterType {
         NONE,
         EXPIRED,
         SOON,
         SAFE
     }
+
     private FilterType currectFilter = FilterType.NONE;
+    private String currentKeyword = "";   // 搜尋關鍵字
 
     private LinearLayout expiredBtn;
     private LinearLayout soonBtn;
     private LinearLayout safeBtn;
 
+    // 日期格式：記得 expiredDate 需為 "dd/MM/yyyy"
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,9 +92,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         askNotificationPermission();
-
         createNotificationChannel();
-//        scheduleTestNotification(); //test notification
         scheduleDailySoonCheck();
 
         // 邊界處理（保留原始設定）
@@ -116,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        // ===== 1) init views =====
+        // ===== 1) 初始化 View =====
         spinner = findViewById(R.id.spinner);
         rvRecords = findViewById(R.id.rvRecords);
         fabAdd = findViewById(R.id.fabAdd);
@@ -129,39 +115,28 @@ public class MainActivity extends AppCompatActivity {
         // ===== 2) init repo =====
         repository = new Repository(getApplication());
 
-        // ===== 3) RecyclerView 基本設定 ===== (下面的item列表)
+        // ===== 3) RecyclerView 基本設定 =====
         rvRecords.setLayoutManager(new LinearLayoutManager(this));
         recordAdapter = new RecordAdapter();
         rvRecords.setAdapter(recordAdapter);
-        // 在這裡設定動畫animation
-        /*DefaultItemAnimator animator = new DefaultItemAnimator();
-        animator.setAddDuration(150);
-        animator.setRemoveDuration(120);
-        animator.setMoveDuration(200);
-        animator.setChangeDuration(0);  // 避免 change 閃爍
 
-        // 這行非常重要：避免 DiffUtil 更新內容一直閃爍
-        animator.setSupportsChangeAnimations(false);
-
-        rvRecords.setItemAnimator(animator);*/
-
-        // ===== 4) Spinner 設定（用專屬 Adapter）===== (上面的下拉清單)
+        // ===== 4) Spinner 設定 =====
         categorySpinnerAdapter = new CategorySpinnerAdapter(this, categoryList);
         spinner.setAdapter(categorySpinnerAdapter);
 
         // 觀察分類變化 → 更新 Spinner
         repository.getAllCategories().observe(this, categories -> {
             categoryList.clear();
-            categoryList.addAll(categories);
+            if (categories != null) categoryList.addAll(categories);
             categorySpinnerAdapter.notifyDataSetChanged();
 
-            // 若第一次進來想預設「All」（或第一個），可以這樣：
+            // 第一次進來預設選到 "All"（若有）
             if (!categoryList.isEmpty() && selectedCid == null) {
-                // 嘗試把名稱為 "All" 的設為選取；找不到就選第 0 個
                 int index = 0;
                 for (int i = 0; i < categoryList.size(); i++) {
                     if ("All".equalsIgnoreCase(categoryList.get(i).cname)) {
-                        index = i; break;
+                        index = i;
+                        break;
                     }
                 }
                 spinner.setSelection(index);
@@ -179,94 +154,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // ===== 5) 觀察 Record 全量 → 存到 allRecords，然後依目前選取的 cid 過濾顯示 =====
+        // ===== 5) 觀察 Record 全量 → 存到 allRecords，然後依目前所有條件過濾 =====
         repository.getAllRecord().observe(this, records -> {
             allRecords.clear();
-            if (records != null) allRecords.addAll(records);//資料庫的讀進來
-            applyFilterAndShow(); // 呼叫function 根據 selectedCid 過濾並顯示
+            if (records != null) allRecords.addAll(records);
+            applyAllFilters();  // ❗統一入口：種類 + 日期 + 搜尋
         });
 
-        // ===== 6) Spinner 選取事件：更新 selectedCid，然後重算顯示 =====
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override public void onItemSelected(AdapterView<?> parent, android.view.View view, int position, long id) {
-                CategoryEntity selected = categoryList.get(position);
-                // 名稱叫 "All" 時顯示全部，否則用該分類的 cid 過濾
-                if ("All".equalsIgnoreCase(selected.cname)) {
-                    selectedCid = null;
-                } else {
-                    selectedCid = selected.cid;   // 直接用就好，不用再去 repository 查一次
-                }
-                applyFilterAndShow();
-            }
-            @Override public void onNothingSelected(AdapterView<?> parent) { /* no-op */ }
-        });
-
-        // 設定 searchView 可以點選整行啟動
-        searchView.setOnClickListener(v -> {
-            searchView.setIconified(false);
-        });
-
-        // 解決 searchView 持續被選取狀態
-        rootView.setOnClickListener(v -> {
-            if (!searchView.isIconified()) {
-                searchView.setIconified(true);
-            }
-        });
-
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                filterByTitle(newText);
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                filterByTitle(query);
-                return true;
-            }
-        });
-
-        // 設定到期日篩選器
-        expiredBtn.setOnClickListener(v -> {
-            if (currectFilter == FilterType.EXPIRED) {
-                currectFilter = FilterType.NONE;
-
-            } else {
-                currectFilter = FilterType.EXPIRED;
-            }
-            updateFilterUI();
-            filterData();
-        });
-
-        soonBtn.setOnClickListener(v -> {
-            if (currectFilter == FilterType.SOON) {
-                currectFilter = FilterType.NONE;
-            } else {
-                currectFilter = FilterType.SOON;
-            }
-            updateFilterUI();
-            filterData();
-        });
-
-        safeBtn.setOnClickListener(v -> {
-            if (currectFilter == FilterType.SAFE) {
-                currectFilter = FilterType.NONE;
-            } else {
-                currectFilter = FilterType.SAFE;
-            }
-            updateFilterUI();
-            filterData();
-        });
-
-        // ===== (可選) 初始化塞兩筆測試 Record 看畫面 =====DELETE FROM record;
+        // 若一開始沒有資料，塞範例
         repository.getAllRecord().observe(this, rs -> {
             if (rs == null || rs.isEmpty()) {
                 RecordEntity r1 = new RecordEntity();
                 r1.cid = tryFindCidByName("Passport");
                 r1.title = "Passport";
                 r1.note = "Renew before summer";
-                r1.expiredDate = "01/05/2026";
+                r1.expiredDate = "01/05/2026";   // dd/MM/yyyy
                 r1.imagePath = "/storage/emulated/0/Download/passport.jpg";
                 repository.insertRecord(r1);
 
@@ -278,15 +180,88 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // ===== 6) Spinner 選取事件：改 selectedCid，然後 applyAllFilters =====
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                CategoryEntity selected = categoryList.get(position);
+                if ("All".equalsIgnoreCase(selected.cname)) {
+                    selectedCid = null;
+                } else {
+                    selectedCid = selected.cid;
+                }
+                applyAllFilters();
+            }
 
-        fabAdd.setOnClickListener(v -> {
-
-            // click add button to reach the add item page
-            Intent intent = new Intent(MainActivity.this, AddPage.class);
-            startActivity(intent);
-
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) { /* no-op */ }
         });
 
+        // ===== 7) SearchView 設定：只更新 currentKeyword + applyAllFilters =====
+        // 點整個 searchView 區塊也可以展開
+        searchView.setOnClickListener(v -> searchView.setIconified(false));
+
+        // 點 rootView 取消 focus
+        rootView.setOnClickListener(v -> {
+            if (!searchView.isIconified()) {
+                searchView.setIconified(true);
+            }
+        });
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                currentKeyword = (newText == null) ? "" : newText.trim();
+                applyAllFilters();
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                currentKeyword = (query == null) ? "" : query.trim();
+                applyAllFilters();
+                return true;
+            }
+        });
+
+        // ===== 8) 日期篩選按鈕：改 currectFilter + 更新UI + applyAllFilters =====
+        expiredBtn.setOnClickListener(v -> {
+            if (currectFilter == FilterType.EXPIRED) {
+                currectFilter = FilterType.NONE;
+            } else {
+                currectFilter = FilterType.EXPIRED;
+            }
+            updateFilterUI();
+            applyAllFilters();
+        });
+
+        soonBtn.setOnClickListener(v -> {
+            if (currectFilter == FilterType.SOON) {
+                currectFilter = FilterType.NONE;
+            } else {
+                currectFilter = FilterType.SOON;
+            }
+            updateFilterUI();
+            applyAllFilters();
+        });
+
+        safeBtn.setOnClickListener(v -> {
+            if (currectFilter == FilterType.SAFE) {
+                currectFilter = FilterType.NONE;
+            } else {
+                currectFilter = FilterType.SAFE;
+            }
+            updateFilterUI();
+            applyAllFilters();
+        });
+
+        // ===== 9) Add 按鈕 → 新增/編輯頁 =====
+        fabAdd.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, AddPage.class);
+            startActivity(intent);
+        });
+
+        // ===== 10) Swipe to delete / edit =====
         ItemTouchHelper.SimpleCallback swipeCallback =
                 new ItemTouchHelper.SimpleCallback(0,
                         ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
@@ -318,7 +293,6 @@ public class MainActivity extends AppCompatActivity {
                         if (direction == ItemTouchHelper.LEFT) {
                             // swipe from right to left：delete
                             repository.deleteRecord(record);
-
                         } else if (direction == ItemTouchHelper.RIGHT) {
                             // swipe from left to right：edit
                             openEditPage(record);
@@ -327,7 +301,7 @@ public class MainActivity extends AppCompatActivity {
                         recordAdapter.notifyItemChanged(position);
                     }
 
-                    //when swiping
+                    // when swiping
                     @Override
                     public void onChildDraw(@NonNull Canvas c,
                                             @NonNull RecyclerView recyclerView,
@@ -341,17 +315,10 @@ public class MainActivity extends AppCompatActivity {
 
                         if (dX > 0) {
                             // swipe to right：edit（gray background + edit icon）
-
-                            // 1. calculating swiping progress（0 ~ 1）
                             float progress = Math.min(1f, dX / itemView.getWidth());
-
-                            // 2. convert swiping progress into alpha（40 ~ 255，prevent from no color at the beginning）
-                            int alpha = (int) (40 + 215 * progress);   // 40 + 215 = 255
-
-                            // 3. ColorUtils with alpha
+                            int alpha = (int) (40 + 215 * progress);
                             int colorWithAlpha = ColorUtils.setAlphaComponent(editColor, alpha);
 
-                            // 4. set background
                             background.setColor(colorWithAlpha);
                             background.setBounds(
                                     itemView.getLeft(),
@@ -366,7 +333,6 @@ public class MainActivity extends AppCompatActivity {
                                 int iconHeight = editIcon.getIntrinsicHeight();
                                 int margin = dpToPx(24);
 
-                                // when swiping over the width of icon -> show icon
                                 if (dX > iconWidth + margin * 2) {
                                     int iconLeft = itemView.getLeft() + margin;
                                     int iconRight = iconLeft + iconWidth;
@@ -377,7 +343,6 @@ public class MainActivity extends AppCompatActivity {
                                     editIcon.draw(c);
                                 }
                             }
-
 
                         } else if (dX < 0) {
                             // swipe to left：delete（red background + delete icon）
@@ -399,7 +364,6 @@ public class MainActivity extends AppCompatActivity {
                                 int iconHeight = deleteIcon.getIntrinsicHeight();
                                 int margin = dpToPx(24);
 
-                                // show the icon when swiping over the certain width
                                 if (Math.abs(dX) > iconWidth + margin * 2) {
                                     int iconRight = itemView.getRight() - margin;
                                     int iconLeft = iconRight - iconWidth;
@@ -410,9 +374,7 @@ public class MainActivity extends AppCompatActivity {
                                     deleteIcon.draw(c);
                                 }
                             }
-
                         } else {
-                            // no swiping at all
                             background.setBounds(0, 0, 0, 0);
                         }
 
@@ -421,53 +383,69 @@ public class MainActivity extends AppCompatActivity {
                 };
 
         new ItemTouchHelper(swipeCallback).attachToRecyclerView(rvRecords);
-
-        // 刪除item
-//        recordAdapter.setOnDeleteClickListener(record -> {
-//            repository.deleteRecord(record);
-//        });
     }
 
-    /** 依 selectedCid 過濾 allRecords，丟給 RecyclerView */
-    private void applyFilterAndShow() {
-        shownRecords.clear();
-        if (selectedCid == null) {
-            shownRecords.addAll(allRecords); // 全部
-        } else {
-            for (RecordEntity r : allRecords) {
-                if (r.cid == selectedCid) shownRecords.add(r);
-            }
-        }
-        recordAdapter.setRecords(shownRecords);
-    }
-
-    // 篩選功能
-    private void filterByTitle(String keyword) {
+    /** 統一過濾：種類 + 日期 + 搜尋 */
+    private void applyAllFilters() {
         shownRecords.clear();
 
-        if (keyword == null || keyword.trim().isEmpty()) {
-            applyFilterAndShow();
-            return;
-        }
-
-        String lower = keyword.toLowerCase().trim();
+        LocalDate today = LocalDate.now();
+        String keywordLower = (currentKeyword == null) ? "" : currentKeyword.toLowerCase();
 
         for (RecordEntity r : allRecords) {
-            if (r.title != null && r.title.toLowerCase().contains(lower)) {
-                shownRecords.add(r);
+
+            // 1. 種類過濾
+            if (selectedCid != null && r.cid != selectedCid) {
+                continue;
             }
+
+            // 2. 日期過濾
+            boolean datePass = false;
+
+            if (currectFilter == FilterType.NONE) {
+                datePass = true;
+            } else {
+                try {
+                    LocalDate expiry = LocalDate.parse(r.expiredDate, formatter);
+                    long daysDiff = java.time.temporal.ChronoUnit.DAYS.between(today, expiry);
+                    long itemSoonDays = r.notifyDaysBefore;
+
+                    switch (currectFilter) {
+                        case EXPIRED:
+                            if (daysDiff < 0) datePass = true;
+                            break;
+                        case SOON:
+                            if (daysDiff >= 0 && daysDiff <= itemSoonDays) datePass = true;
+                            break;
+                        case SAFE:
+                            if (daysDiff > itemSoonDays) datePass = true;
+                            break;
+                        default:
+                            datePass = true;
+                    }
+                } catch (Exception e) {
+                    // 日期格式錯誤時，這筆資料就略過或視為不通過
+                    datePass = false;
+                }
+            }
+
+            if (!datePass) continue;
+
+            // 3. 搜尋過濾 (title)
+            if (!keywordLower.isEmpty()) {
+                if (r.title == null || !r.title.toLowerCase().contains(keywordLower)) {
+                    continue;
+                }
+            }
+
+            // 通過所有條件
+            shownRecords.add(r);
         }
+
         recordAdapter.setRecords(shownRecords);
     }
 
-    /** 小工具：用分類名稱找 cid（找不到回傳 0） */
-    private int tryFindCidByName(String name) {
-        for (CategoryEntity c : categoryList) {
-            if (c.cname != null && c.cname.equalsIgnoreCase(name)) return c.cid;
-        }
-        return 0;
-    }
-
+    /** 更新日期篩選按鈕的 UI */
     private void updateFilterUI() {
         if (currectFilter == FilterType.EXPIRED) {
             expiredBtn.setBackgroundResource(R.drawable.buttonstyle_selected);
@@ -488,52 +466,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    private void filterData() {
-        shownRecords.clear();
-
-        LocalDate today = LocalDate.now();
-
-        for (RecordEntity r : allRecords) {
-
-            // 1. 分類器過濾
-            if (selectedCid != null && r.cid != selectedCid) {
-                continue;
-            }
-
-            // 2. 日期過濾
-            LocalDate expiry = LocalDate.parse(r.expiredDate, formatter);
-            long daysDiff = java.time.temporal.ChronoUnit.DAYS.between(today, expiry);
-
-            long itemSoonDays = r.notifyDaysBefore;
-            boolean pass = false;
-
-            switch (currectFilter) {
-                case NONE:
-                    pass = true;
-                    break;
-
-                case EXPIRED:
-                    if (daysDiff < 0) pass = true;
-                    break;
-
-                case SOON:
-                    if (daysDiff >= 0 && daysDiff <= itemSoonDays) pass = true;
-                    break;
-
-                case SAFE:
-                    if (daysDiff > itemSoonDays) pass = true;
-                    break;
-            }
-
-            if (pass) shownRecords.add(r);
+    /** 小工具：用分類名稱找 cid（找不到回傳 0） */
+    private int tryFindCidByName(String name) {
+        for (CategoryEntity c : categoryList) {
+            if (c.cname != null && c.cname.equalsIgnoreCase(name)) return c.cid;
         }
-
-        recordAdapter.setRecords(shownRecords);
+        return 0;
     }
 
     private void createNotificationChannel() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             String channelId = "expiry_channel";
             String channelName = "Expiration Reminder";
             String channelDesc = "Notify when items are nearing expiration";
@@ -551,7 +493,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    //run worker to daily check the soon item, and send notification
+    // run worker to daily check the soon item, and send notification
     private void scheduleDailySoonCheck() {
         Calendar now = Calendar.getInstance();
         Calendar nextRun = Calendar.getInstance();
@@ -570,27 +512,25 @@ public class MainActivity extends AppCompatActivity {
         // calculate the working period
         long initialDelay = nextRun.getTimeInMillis() - now.getTimeInMillis();
 
-        // build the worker constraint　(let the worker work in low battery mode)
+        // build the worker constraint (let the worker work in low battery mode)
         Constraints constraints = new Constraints.Builder()
                 .setRequiresBatteryNotLow(false)
                 .build();
 
-        // build the period worker (once a day)
+        // build the period worker (once a day) — 這裡原本是 MINUTES，如果要真的每天記得改成 DAYS
         PeriodicWorkRequest request =
-                new PeriodicWorkRequest.Builder(Notification.class, 1, TimeUnit.MINUTES) // daily
+                new PeriodicWorkRequest.Builder(Notification.class, 1, TimeUnit.MINUTES) // debug: 1 分鐘
                         .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
                         .setConstraints(constraints)
                         .build();
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
                 "soon_daily_check",
-                ExistingPeriodicWorkPolicy.UPDATE,  // use REPLACE/UPDATE，not KEEP
+                ExistingPeriodicWorkPolicy.UPDATE,
                 request
         );
     }
-
-
-//    //test notification ( notify after running the app for 5 sec)
+    //    //test notification ( notify after running the app for 5 sec)
 //    private void scheduleTestNotification() {
 //        WorkRequest request =
 //                new OneTimeWorkRequest.Builder(Notification.class)
@@ -599,10 +539,9 @@ public class MainActivity extends AppCompatActivity {
 //
 //        WorkManager.getInstance(this).enqueue(request);
 //    }
-
     // need to ask the user "if allow the app to send the notification"
     private void askNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13 (API 33) above -> new rule
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13 (API 33) above
             if (ContextCompat.checkSelfPermission(
                     this,
                     Manifest.permission.POST_NOTIFICATIONS
@@ -628,5 +567,4 @@ public class MainActivity extends AppCompatActivity {
     private int dpToPx(int dp) {
         return Math.round(dp * getResources().getDisplayMetrics().density);
     }
-
 }
