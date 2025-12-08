@@ -21,6 +21,8 @@ import androidx.recyclerview.widget.DiffUtil;
 import com.example.expirationtracker_java.data.entity.RecordEntity;
 import android.net.Uri;
 
+import android.content.Intent;
+
 public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordViewHolder> {
 
     private List<RecordEntity> records = new ArrayList<>();
@@ -94,8 +96,15 @@ public class RecordAdapter extends RecyclerView.Adapter<RecordAdapter.RecordView
             } catch (Exception e) {
                 holder.imgRecord.setImageResource(R.drawable.ic_launcher_foreground);
             }
+            // click image-> open it with full screen
+            holder.imgRecord.setOnClickListener(v -> {
+                Intent intent = new Intent(v.getContext(), FullscreenImageActivity.class);
+                intent.putExtra("imageUri", record.imagePath);
+                v.getContext().startActivity(intent);
+            });
         } else {
             holder.imgRecord.setImageResource(R.drawable.ic_launcher_foreground);
+            holder.imgRecord.setOnClickListener(null); // if there's no image, then don't deal with clicking
         }
 
 

@@ -28,6 +28,8 @@
             android:name=".AddPage"
             android:exported="false" />
 
+        <activity android:name=".FullscreenImageActivity" />
+
     </application>
 
 </manifest>
